@@ -1,4 +1,6 @@
 /limine
 /edk2-ovmf
+/.cache
 *.iso
 *.hdd
+*.json

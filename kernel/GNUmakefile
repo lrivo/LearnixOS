@@ -1,6 +1,9 @@
 # Nuke built-in rules.
 .SUFFIXES:
 
+# User controllable target architecture
+ARCH ?= amd64
+
 # This is the name that our final executable will have.
 # Change as needed.
 override OUTPUT := kernel
@@ -62,6 +65,7 @@ ifeq ($(CC_IS_CLANG),1)
 endif
 
 # Internal C flags that should not be changed by the user.
+# FIXME: target architecture still hardcoded
 override CFLAGS += \
     -Wall \
     -Wextra \
@@ -86,7 +90,7 @@ override CFLAGS += \
 
 # Internal C preprocessor flags that should not be changed by the user.
 override CPPFLAGS := \
-    -I src \
+    -I include/ \
     -I limine-protocol/include \
     -isystem freestnd-c-hdrs/include \
     $(CPPFLAGS) \
@@ -100,17 +104,24 @@ override NASMFLAGS := \
     -Wall
 
 # Internal linker flags that should not be changed by the user.
+# FIXME: target architecture & linker script still hardcoded
 override LDFLAGS += \
     -m elf_x86_64 \
     -nostdlib \
     -static \
     -z max-page-size=0x1000 \
     --gc-sections \
-    -T linker-scripts/x86_64.lds
+    -T arch/amd64/x86_64.lds
 
-# Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
-# object and header dependency file names.
-override SRCFILES := $(shell find -L src cc-runtime/src -type f 2>/dev/null | LC_ALL=C sort)
+# Get all files under kernel/
+SRCFILES := $(shell find -L -type f 2>/dev/null | LC_ALL=C sort)
+# Remove every source file under kernel/arch
+SRCFILES := $(filter-out ./arch/%, $(SRCFILES))
+# Only re-add architecture specific files
+ARCH_FILES := $(shell find -L ./arch/$(ARCH) -type f 2>/dev/null | LC_ALL=C sort)
+override SRCFILES += $(ARCH_FILES)
+
+# Get all .c, .S, .asm, .obj from SRCFILES
 override CFILES := $(filter %.c,$(SRCFILES))
 override ASFILES := $(filter %.S,$(SRCFILES))
 override NASMFILES := $(filter %.asm,$(SRCFILES))
@@ -125,7 +136,8 @@ all: bin/$(OUTPUT)
 -include $(HEADER_DEPS)
 
 # Link rules for the final executable.
-bin/$(OUTPUT): GNUmakefile linker-scripts/x86_64.lds $(OBJ)
+# FIXME: linker script still hardcoded
+bin/$(OUTPUT): GNUmakefile arch/amd64/x86_64.lds $(OBJ)
 	mkdir -p "$(dir $@)"
 	$(LD) $(LDFLAGS) $(OBJ) -o $@
 
