@@ -1,7 +1,9 @@
+#include "gdt.h"
 #include "idt.h"
 #include <arch.h>
 
 void arch_stage_1() {
+  gdt_init();
   idt_init();
 }
 
