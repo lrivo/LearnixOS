@@ -1,3 +1,5 @@
+#include <interrupts.h>
+#include <arch.h>
 #include <lib/string.h>
 #include <limine.h>
 #include <stdbool.h>
@@ -32,26 +34,24 @@ __attribute__((used,
 __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
-// Halt and catch fire function.
-static void hcf(void) {
-  for (;;) {
-    asm("hlt");
-  }
-}
-
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
 void kmain(void) {
+  // disable interrupts
+  arch_interrupts_disable();
+
   // Ensure the bootloader actually understands our base revision (see spec).
   if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
-    hcf();
+    arch_hcf();
   }
+
+  arch_stage_1();
 
   // Ensure we got a framebuffer.
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
-    hcf();
+    arch_hcf();
   }
 
   // Fetch the first framebuffer.
@@ -64,9 +64,6 @@ void kmain(void) {
     fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
   }
 
-  char buf[128];
-  memset(buf, 0x41, 128);
-
   // We're done, just hang...
-  hcf();
+  arch_hcf();
 }
