@@ -27,6 +27,16 @@ run: $(IMAGE_NAME).iso
 		-boot d \
 		$(QEMUFLAGS)
 
+.PHONY: run-gdb-uefi
+run-gdb-uefi: edk2-ovmf $(IMAGE_NAME).iso
+	qemu-system-x86_64 \
+		-M q35 \
+		-drive if=pflash,unit=0,format=raw,file=edk2-ovmf/ovmf-code-x86_64.fd,readonly=on \
+		-cdrom $(IMAGE_NAME).iso \
+		-boot d \
+		-s -S \
+		$(QEMUFLAGS)
+
 .PHONY: run-uefi
 run-uefi: edk2-ovmf $(IMAGE_NAME).iso
 	qemu-system-x86_64 \

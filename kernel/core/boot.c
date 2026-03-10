@@ -48,6 +48,9 @@ void kmain(void) {
 
   arch_stage_1();
 
+  volatile int a = 0;
+  volatile int c = 10 / a;
+
   // Ensure we got a framebuffer.
   if (framebuffer_request.response == NULL ||
       framebuffer_request.response->framebuffer_count < 1) {
