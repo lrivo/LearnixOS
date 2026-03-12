@@ -126,6 +126,7 @@ override CFILES := $(filter %.c,$(SRCFILES))
 override ASFILES := $(filter %.S,$(SRCFILES))
 override NASMFILES := $(filter %.asm,$(SRCFILES))
 override OBJ := $(addprefix obj/,$(CFILES:.c=.c.o) $(ASFILES:.S=.S.o) $(NASMFILES:.asm=.asm.o))
+override OBJ += obj/font.o
 override HEADER_DEPS := $(addprefix obj/,$(CFILES:.c=.c.d) $(ASFILES:.S=.S.d))
 
 # Default target. This must come first, before header dependencies.
@@ -155,6 +156,9 @@ obj/%.S.o: %.S GNUmakefile
 obj/%.asm.o: %.asm GNUmakefile
 	mkdir -p "$(dir $@)"
 	nasm $(NASMFLAGS) $< -o $@
+
+obj/font.o: default8x16.psfu
+	llvm-objcopy -O elf64-x86-64 -B i386 -I binary default8x16.psfu obj/font.o
 
 # Remove object files and the final executable.
 .PHONY: clean
