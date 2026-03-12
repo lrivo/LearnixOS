@@ -1,3 +1,4 @@
+#include "lib/kprintf.h"
 #include <drivers/console.h>
 #include <interrupts.h>
 #include <core.h>
@@ -36,6 +37,11 @@ __attribute__((used,
 __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
+/* kprintf() needs to know how to print characters, we route him to our framebuffer console. */
+void _putchar(char character) {
+  console_putchar(character);
+}
+
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
@@ -66,8 +72,8 @@ void kmain(void) {
     framebuffer->pitch
   };
   console_init(fb_info);
-
-  kernel_panic("testing");
+  
+  kprintf("Hello World!\n%d!", 10);
 
   // Initialize the CPU
   arch_stage_1();
