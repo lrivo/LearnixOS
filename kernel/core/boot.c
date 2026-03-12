@@ -75,6 +75,8 @@ void kmain(void) {
   
   kprintf("Hello World!\n%d!", 10);
 
+  kpanic("Error %d", 10);
+
   // Initialize the CPU
   arch_stage_1();
 

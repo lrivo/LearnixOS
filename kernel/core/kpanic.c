@@ -1,15 +1,22 @@
 #include <arch.h>
 #include <drivers/console.h>
 #include <interrupts.h>
+#include <lib/kprintf.h>
+#include <stdarg.h>
 
-void kernel_panic(const char *msg) {
+void kpanic(const char *fmt, ...) {
   // disable interrupts
   arch_interrupts_disable();
 
   // output the error on screen in red
   console_set_color(0, 0xFF0000);
-  console_putstr("\n** KERNEL PANIC **\n");
-  console_putstr(msg);
+  kprintf("\n** KERNEL PANIC **\n");
+
+  // handles format arguments
+  va_list args;
+  va_start(args, fmt);
+  kvprintf(fmt, args);
+  va_end(args);
 
   // halt the CPU
   arch_hcf();
