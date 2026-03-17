@@ -41,7 +41,8 @@ CFLAGS := -g -O2 -pipe \
 	-D PRINTF_DISABLE_SUPPORT_FLOAT \
 	-D PRINTF_DISABLE_SUPPORT_EXPONENTIAL \
 	-D PRINTF_DISABLE_SUPPORT_LONG_LONG \
-	-D PRINTF_DISABLE_SUPPORT_PTRDIFF_T
+	-D PRINTF_DISABLE_SUPPORT_PTRDIFF_T \
+	-fno-omit-frame-pointer
 
 # User controllable C preprocessor flags. We set none by default.
 CPPFLAGS :=

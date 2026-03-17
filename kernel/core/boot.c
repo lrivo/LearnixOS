@@ -1,3 +1,4 @@
+#include "lib/debug.h"
 #include "lib/kprintf.h"
 #include "mm/pmm.h"
 #include <mm/memlayout.h>
@@ -22,7 +23,6 @@ __attribute__((used, section(".limine_requests"))) static volatile uint64_t
 // the compiler does not optimise them away, so, usually, they should
 // be made volatile or equivalent, _and_ they should be accessed at least
 // once or marked as used with the "used" attribute as done here.
-
 __attribute__((
     used,
     section(
@@ -110,8 +110,7 @@ void kmain(void) {
   pmm_init(memmap_request.response);
   
   // Print welcome banner
-  kprintf("---\nWelcome on LearnixOS\n---\n");
-  kprintf("The kernel is virtually loaded at %p and physically at %p\n", kernel_virt_base, kernel_phys_base);
+  kprintf("Welcome on LearnixOS\n");
 
   // We're done, hang this core
   arch_hcf();

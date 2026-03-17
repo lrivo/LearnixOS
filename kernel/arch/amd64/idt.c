@@ -3,6 +3,7 @@
 #include <lib/string.h>
 #include <stdint.h>
 #include "idt.h"
+#include "lib/debug.h"
 #include <core.h>
 
 /* Assembly interrupt stubs that call the dispatcher after saving registers and pushing the vector number. */
@@ -36,6 +37,7 @@ static void idt_set_gate(size_t idx, uintptr_t handler, uint16_t selector, uint8
 
 static void handler_div_zero(struct intr_stack_frame_t *f) {
   kpanic("Division by zero at %p\n", f->rip);
+  dbg_print_stack_trace(5);
   arch_hcf();
 }
 
