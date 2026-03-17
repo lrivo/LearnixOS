@@ -45,8 +45,6 @@ void console_init(struct console_fb_info info) {
 
   ctx.cursor_x = 0;
   ctx.cursor_y = 0;
-  ctx.cols = ctx.width / ctx.font->width;
-  ctx.rows = ctx.height / ctx.font->height;
   ctx.fg_col = 0x00FF00;
 }
 
@@ -60,17 +58,17 @@ void console_putchar(char c) {
     case '\n': {
       ctx.cursor_x = 0;
       ctx.cursor_y += ctx.font->height;
-      if (ctx.cursor_y > ctx.rows) {
+      if (ctx.cursor_y > ctx.height) {
         console_scroll();
       }
       break;
     }
     default: {
-      if (ctx.cursor_x >= ctx.cols) {
+      if (ctx.cursor_x >= ctx.width) {
         ctx.cursor_x = 0;
         ctx.cursor_y += ctx.font->height;
       }
-      if (ctx.cursor_y >= ctx.rows) {
+      if (ctx.cursor_y >= ctx.height) {
         console_scroll();
       }
       draw_char(c, ctx.cursor_x, ctx.cursor_y);

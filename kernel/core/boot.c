@@ -1,4 +1,6 @@
 #include "lib/kprintf.h"
+#include "mm/hhdm.h"
+#include "mm/pmm.h"
 #include <drivers/console.h>
 #include <interrupts.h>
 #include <core.h>
@@ -27,6 +29,18 @@ __attribute__((
         ".limine_requests"))) static volatile struct limine_framebuffer_request
     framebuffer_request = {.id = LIMINE_FRAMEBUFFER_REQUEST_ID, .revision = 0};
 
+// Limine memory map
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_memmap_request
+    memmap_request = {.id = LIMINE_MEMMAP_REQUEST_ID, .revision = 4};
+
+// HHDM
+__attribute__((
+    used,
+    section(".limine_requests"))) static volatile struct limine_hhdm_request
+    hhdm_request = {.id = LIMINE_HHDM_REQUEST_ID, .revision = 4};
+
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
 
@@ -36,6 +50,9 @@ __attribute__((used,
 
 __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+
+/* GLOBAL VARIABLES */
+uintptr_t hhdm_offset = 0;
 
 /* kprintf() needs to know how to print characters, we route him to our framebuffer console. */
 void _putchar(char character) {
@@ -72,13 +89,14 @@ void kmain(void) {
     framebuffer->pitch
   };
   console_init(fb_info);
-  
-  kprintf("Hello World!\n%d!", 10);
-
-  kpanic("Error %d", 10);
 
   // Initialize the CPU
   arch_stage_1();
+
+  // Setup HHDM base and start the physical memory manager
+  hhdm_offset = hhdm_request.response->offset;
+
+  pmm_init(memmap_request.response);
 
   // We're done, hang this core
   arch_hcf();

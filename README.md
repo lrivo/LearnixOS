@@ -8,8 +8,6 @@ Just run the following command:
 ```bash
 make TOOLCHAIN=llvm ARCH=amd64
 ```
-```
-```
 
 ## Credits
 - https://codeberg.org/Limine/limine-c-template-x86-64

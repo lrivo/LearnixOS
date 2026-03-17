@@ -26,8 +26,6 @@ struct console_ctx {
   /* terminal state. */
   uint32_t cursor_x;
   uint32_t cursor_y;
-  uint32_t cols;      // width / font_width
-  uint32_t rows;      // heigth / font_height
   uint32_t fg_col;    // RGB foreground color
   uint32_t bg_col;    // RGB background color
 

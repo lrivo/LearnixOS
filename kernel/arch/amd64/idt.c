@@ -3,6 +3,7 @@
 #include <lib/string.h>
 #include <stdint.h>
 #include "idt.h"
+#include <core.h>
 
 /* Assembly interrupt stubs that call the dispatcher after saving registers and pushing the vector number. */
 extern uintptr_t isr_stubs_table[];
@@ -34,9 +35,8 @@ static void idt_set_gate(size_t idx, uintptr_t handler, uint16_t selector, uint8
 }
 
 static void handler_div_zero(struct intr_stack_frame_t *f) {
-  // TEST: jump to the instruction after the division
-  // just to check that I am correctly saving/restoring the regs
-  f->rip = 0xffffffff80001032;
+  kpanic("Division by zero at %p\n", f->rip);
+  arch_hcf();
 }
 
 void arch_interrupts_register(size_t vector, intr_handler_t handler, intr_flags_t flags) {
