@@ -1,8 +1,7 @@
-#include "lib/kprintf.h"
 #include "limine.h"
 #include <core.h>
 #include <lib/string.h>
-#include <mm/hhdm.h>
+#include <mm/memlayout.h>
 #include <mm/pmm.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -74,12 +73,18 @@ static void bitmap_assign_range(size_t start, size_t end, int set) {
 
 /* test */
 static void pmm_test() {
-  // 1. try to allocate a physical page
-  physaddr_t p = pmm_alloc(PMM_NONE);
-  kprintf("Got pa %p\n", p);
+  // #1: should get two contiguous physical pages
+  physaddr_t p1 = pmm_alloc(PMM_NONE);
+  physaddr_t p2 = pmm_alloc(PMM_NONE);
+  if (p1 + PGSIZE != p2) {
+    kpanic("pmm_test #1: not contiguous");
+  }
 
-  p = pmm_alloc(PMM_NONE);
-  kprintf("Got pa %p\n", p);
+  // 2. free the second page, should re-allocate it
+  pmm_unref_pg(p2);
+  if (pmm_alloc(PMM_NONE) != p2) {
+    kpanic("pmm_test #2: page not freeed correctly");
+  }
 }
 
 void pmm_init(struct limine_memmap_response *mmap) {

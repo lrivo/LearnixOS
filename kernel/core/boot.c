@@ -1,6 +1,6 @@
 #include "lib/kprintf.h"
-#include "mm/hhdm.h"
 #include "mm/pmm.h"
+#include <mm/memlayout.h>
 #include <drivers/console.h>
 #include <interrupts.h>
 #include <core.h>
@@ -41,6 +41,12 @@ __attribute__((
     section(".limine_requests"))) static volatile struct limine_hhdm_request
     hhdm_request = {.id = LIMINE_HHDM_REQUEST_ID, .revision = 4};
 
+// Kernel executable load addresses
+__attribute((
+  used,
+  section(".limine_requests"))) static volatile struct limine_executable_address_request
+  exec_request = {.id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID, .revision = 4};
+
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
 
@@ -53,6 +59,8 @@ __attribute__((used, section(".limine_requests_end"))) static volatile uint64_t
 
 /* GLOBAL VARIABLES */
 uintptr_t hhdm_offset = 0;
+uintptr_t kernel_virt_base = 0;
+uintptr_t kernel_phys_base = 0;
 
 /* kprintf() needs to know how to print characters, we route him to our framebuffer console. */
 void _putchar(char character) {
@@ -70,6 +78,11 @@ void kmain(void) {
   if (LIMINE_BASE_REVISION_SUPPORTED(limine_base_revision) == false) {
     arch_hcf();
   }
+  
+  // save the HDDM base address for the global translation macros 
+  hhdm_offset = hhdm_request.response->offset;
+  kernel_virt_base = exec_request.response->virtual_base;
+  kernel_phys_base = exec_request.response->physical_base;
 
   // Ensure we got a framebuffer.
   if (framebuffer_request.response == NULL ||
@@ -93,10 +106,12 @@ void kmain(void) {
   // Initialize the CPU
   arch_stage_1();
 
-  // Setup HHDM base and start the physical memory manager
-  hhdm_offset = hhdm_request.response->offset;
-
+  // Initialize the Physical Memory Manager configured at compile-time
   pmm_init(memmap_request.response);
+  
+  // Print welcome banner
+  kprintf("---\nWelcome on LearnixOS\n---\n");
+  kprintf("The kernel is virtually loaded at %p and physically at %p\n", kernel_virt_base, kernel_phys_base);
 
   // We're done, hang this core
   arch_hcf();

@@ -6,11 +6,8 @@
 #include <limine.h>
 #include <stddef.h>
 
-#define PGSIZE 4096
-#define PGROUNDUP(sz) (((sz) + PGSIZE - 1) & ~(PGSIZE - 1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
-
-#define PMM_ALLOC_FAIL SIZE_MAX
+/* Returned by pmm_alloc() on failure, equals to uint64 max. */
+#define PMM_ALLOC_FAIL 0xFFFFFFFFFFFFFFFF 
 
 /* PMM allocation flags. */
 #define PMM_NONE 0
