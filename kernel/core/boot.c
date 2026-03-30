@@ -1,9 +1,9 @@
-#include "lib/debug.h"
 #include "lib/kprintf.h"
 #include "mm/pmm.h"
 #include <mm/memlayout.h>
 #include <drivers/console.h>
 #include <interrupts.h>
+#include <drivers/input/ps2kb.h>
 #include <core.h>
 #include <arch.h>
 #include <lib/string.h>
@@ -102,15 +102,21 @@ void kmain(void) {
     framebuffer->pitch
   };
   console_init(fb_info);
-
+  
   // Initialize the CPU
   arch_stage_1();
-
+	
   // Initialize the Physical Memory Manager configured at compile-time
   pmm_init(memmap_request.response);
+
+  // Initialize the PS/2 keyboard
+  ps2kb_init();
   
   // Print welcome banner
   kprintf("Welcome on LearnixOS\n");
+  
+  // Enable interrupts
+  arch_interrupts_enable();
 
   // We're done, hang this core
   arch_hcf();

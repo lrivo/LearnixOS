@@ -133,14 +133,25 @@ isr_noerr 18      ; Machine Check
 isr_noerr 19      ; SIMD Floating-Point Exception
 isr_noerr 20      ; Virtualization Exception
 isr_err 21        ; Control Protection Exception
-
+isr_noerr 22
+isr_noerr 23
+isr_noerr 24
+isr_noerr 25
+isr_noerr 26
+isr_noerr 27
+isr_noerr 28
+isr_noerr 29
+isr_noerr 30
+isr_noerr 31
+isr_noerr 32	  ; ISR0: hw timer
+isr_noerr 33	  ; ISR1: PS/2 keyboard
 
 ; stub table
 section .rodata
 GLOBAL isr_stubs_table
 isr_stubs_table:
 %assign i 0
-%rep 22
+%rep 34
   dq isr_stub_%+i
 %assign i i+1
 %endrep

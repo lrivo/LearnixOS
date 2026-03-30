@@ -1,8 +1,10 @@
 #include <arch.h>
 #include <interrupts.h>
 #include <lib/string.h>
+#include <lib/kprintf.h>
 #include <stdint.h>
 #include "idt.h"
+#include "pic.h"
 #include "lib/debug.h"
 #include <core.h>
 
@@ -41,15 +43,20 @@ static void handler_div_zero(struct intr_stack_frame_t *f) {
   arch_hcf();
 }
 
+static void handler_timer(struct intr_stack_frame_t *f)
+{
+   pic_eoi(0);
+}
+
 void arch_interrupts_register(size_t vector, intr_handler_t handler, intr_flags_t flags) {
   // 0. Input checks
-  if (vector > IDT_ENTRIES || !handler) 
+  if (vector > IDT_ENTRIES) 
     return;
 
   // 1. Register the handler in the dispatcher's table
   handlers[vector] = handler;
 
-  // 2. Update the IDT
+  // 2. Update the IDT, in case the flags changed
   idt_set_gate(vector, isr_stubs_table[vector], KERN_CODE_SEGMENT, 0, INTERRUPT_GATE);
 }
 
@@ -62,9 +69,16 @@ void intr_dispatcher(struct intr_stack_frame_t *frame) {
 }
 
 void idt_init() {
-  memset(idt, 0, sizeof(idt_entry_t) * IDT_ENTRIES);
-
+  // initially register an empty handler  
+  for (int i = 0; i <= 33; i++) {
+      arch_interrupts_register(i, NULL, INTR_FLAG_DEFAULT);
+  }
+	
+  // then load the actual exception handlers
   arch_interrupts_register(0, handler_div_zero, INTR_FLAG_DEFAULT);
-
+  
+  arch_interrupts_register(0x20, handler_timer, INTR_FLAG_DEFAULT);
+	
+  // and finally tell the CPU where the IDT is with the lidt instruction
   idt_load();
 }
