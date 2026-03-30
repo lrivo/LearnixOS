@@ -6,19 +6,23 @@
 static gdt_entry_t gdt[5];
 static gdtr_t gdtr;
 
-static inline void gdt_load() {
-  gdtr.size = (5 * sizeof(gdt_entry_t)) - 1;
+static inline void
+gdt_load ()
+{
+  gdtr.size = (5 * sizeof (gdt_entry_t)) - 1;
   gdtr.offset = (uintptr_t)&gdt;
 
-  asm volatile("lgdt (%0)" : : "r"(&gdtr));
+  asm volatile ("lgdt (%0)" : : "r"(&gdtr));
 
-  reloadSegments();
+  reloadSegments ();
 }
 
 // NOTE: on x86_64 base and limits are meaningless, only access and flags count
-void gdt_init() {
+void
+gdt_init ()
+{
   // 0x00: Null descriptor
-  memset(gdt, 0, sizeof(gdt_entry_t));
+  memset (gdt, 0, sizeof (gdt_entry_t));
 
   // 0x08: Kernel Mode Code Segment
   gdt[1].limit = 0;
@@ -95,6 +99,6 @@ void gdt_init() {
    */
   gdt[4].access = 0xFA;
   gdt[4].flags = 0xA0;
-  
-  gdt_load();
+
+  gdt_load ();
 }
