@@ -1,7 +1,7 @@
+#include "pic.h"
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/io.h>
 #include <stdint.h>
-#include "pic.h"
 
 #define IO_WAIT pio_write8 (0x80, 0)
 
@@ -84,19 +84,19 @@ pic_eoi (int irq)
 }
 
 void
-arch_interrupts_mask(size_t vector)
+arch_interrupts_mask (size_t vector)
 {
   pic_edit_mask ((int)vector, 1);
 }
 
 void
-arch_interrupts_unmask(size_t vector)
+arch_interrupts_unmask (size_t vector)
 {
   pic_edit_mask ((int)vector, 0);
 }
 
 void
-arch_interrupts_eoi(size_t vector)
+arch_interrupts_eoi (size_t vector)
 {
   pic_eoi ((int)vector);
 }

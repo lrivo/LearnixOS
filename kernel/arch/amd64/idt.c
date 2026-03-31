@@ -1,12 +1,12 @@
+#include "idt.h"
 #include <learnix/arch/arch.h>
 #include <learnix/lib/debug.h>
-#include <learnix/lib/string.h>
 #include <learnix/lib/kpanic.h>
+#include <learnix/lib/string.h>
 #include <stdint.h>
-#include "idt.h"
 
-/* Assembly stubs defined in isr_stubs.asm that are registered directly in the IDT
- * and then calls intr_dispatcher after saving registers and pushing the
+/* Assembly stubs defined in isr_stubs.asm that are registered directly in the
+ * IDT and then calls intr_dispatcher after saving registers and pushing the
  * vector number and error code. */
 extern uintptr_t isr_stubs_table[];
 
@@ -76,11 +76,11 @@ void
 intr_dispatcher (struct intr_stack_frame_t *frame)
 {
   int vector_num = (int)frame->vector_num;
-  
+
   if (handlers[vector_num])
     handlers[vector_num](frame);
   else
-    kpanic("intr_dispatcher: %d is not registered", vector_num);
+    kpanic ("intr_dispatcher: %d is not registered", vector_num);
 }
 
 void
@@ -91,7 +91,7 @@ idt_init ()
   {
     arch_interrupts_register (i, NULL, INTR_FLAG_DEFAULT);
   }
-  
+
   // load the actual handlers
   arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
