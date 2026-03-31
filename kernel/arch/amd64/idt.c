@@ -59,6 +59,24 @@ handler_timer (struct intr_stack_frame_t *f)
 }
 
 void
+arch_interrupts_mask (size_t vector)
+{
+  pic_set_mask (vector, 1);
+}
+
+void
+arch_interrupts_unmask (size_t vector)
+{
+  pic_set_mask (vector, 0);
+}
+
+void
+arch_interrupts_eoi (size_t vector)
+{
+  pic_eoi (vector);
+}
+
+void
 arch_interrupts_register (size_t vector, intr_handler_t handler,
                           intr_flags_t flags)
 {

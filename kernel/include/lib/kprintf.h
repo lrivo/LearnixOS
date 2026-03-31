@@ -40,7 +40,7 @@
  * implementation somewhere
  * \param character Character to output
  */
-void _putchar(char character);
+void _putchar (char character);
 
 /**
  * Tiny printf implementation
@@ -52,7 +52,7 @@ void _putchar(char character);
  * counting the terminating null character
  */
 #define kprintf printf_
-int printf_(const char *format, ...);
+int printf_ (const char *format, ...);
 
 /**
  * Tiny sprintf implementation
@@ -65,7 +65,7 @@ int printf_(const char *format, ...);
  * counting the terminating null character
  */
 #define ksprintf sprintf_
-int sprintf_(char *buffer, const char *format, ...);
+int sprintf_ (char *buffer, const char *format, ...);
 
 /**
  * Tiny snprintf/vsnprintf implementation
@@ -81,8 +81,8 @@ int sprintf_(char *buffer, const char *format, ...);
  */
 #define ksnprintf snprintf_
 #define kvsnprintf vsnprintf_
-int snprintf_(char *buffer, size_t count, const char *format, ...);
-int vsnprintf_(char *buffer, size_t count, const char *format, va_list va);
+int snprintf_ (char *buffer, size_t count, const char *format, ...);
+int vsnprintf_ (char *buffer, size_t count, const char *format, va_list va);
 
 /**
  * Tiny vprintf implementation
@@ -92,7 +92,7 @@ int vsnprintf_(char *buffer, size_t count, const char *format, va_list va);
  * counting the terminating null character
  */
 #define kvprintf vprintf_
-int vprintf_(const char *format, va_list va);
+int vprintf_ (const char *format, va_list va);
 
 /**
  * printf with output function
@@ -105,6 +105,5 @@ int vprintf_(const char *format, va_list va);
  * \return The number of characters that are sent to the output function, not
  * counting the terminating null character
  */
-int fctprintf(void (*out)(char character, void *arg), void *arg,
-              const char *format, ...);
-
+int fctprintf (void (*out) (char character, void *arg), void *arg,
+               const char *format, ...);

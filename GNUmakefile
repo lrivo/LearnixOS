@@ -110,7 +110,7 @@ $(IMAGE_NAME).hdd: limine/limine kernel
 	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTX64.EFI ::/EFI/BOOT
 	mcopy -i $(IMAGE_NAME).hdd@@1M limine/BOOTIA32.EFI ::/EFI/BOOT
 
-.PHONY: format
+format:
 	find kernel/ -name "*.c" -o -name "*.h" | xargs clang-format -i
 
 .PHONY: clean

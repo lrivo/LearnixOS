@@ -30,7 +30,7 @@ ps2_handler (struct intr_stack_frame_t *f)
   break_code = 0;
 
 eoi:
-  pio_write8 (0x20, 0x20);
+  arch_interrupts_eoi (1);
 }
 
 /* Must be called before trying to read DATA_PORT. */

@@ -3,7 +3,8 @@
 #include <stdint.h>
 
 /* PSF2 Font header struct */
-typedef struct {
+typedef struct
+{
 #define PSF2_MAGIC 0x864ab572
   uint32_t magic;         /* magic bytes to identify PSF */
   uint32_t version;       /* zero */
@@ -14,4 +15,3 @@ typedef struct {
   uint32_t height;        /* height in pixels */
   uint32_t width;         /* width in pixels */
 } psf2_hdr;
-
