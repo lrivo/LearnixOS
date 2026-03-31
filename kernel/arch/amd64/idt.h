@@ -1,5 +1,5 @@
 #pragma once
-#include <interrupts.h>
+#include <learnix/arch/interrupts.h>
 #include <stdint.h>
 
 #define IDT_ENTRIES 256

@@ -1,7 +1,7 @@
+#include <learnix/arch/arch.h>
 #include "gdt.h"
 #include "idt.h"
 #include "pic.h"
-#include <arch.h>
 
 void
 arch_stage_1 ()

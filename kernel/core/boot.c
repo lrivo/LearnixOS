@@ -1,13 +1,13 @@
-#include "lib/kprintf.h"
-#include "mm/pmm.h"
-#include <arch.h>
-#include <core.h>
-#include <drivers/console.h>
-#include <drivers/input/ps2kb.h>
-#include <interrupts.h>
-#include <lib/string.h>
+#include <learnix/arch/arch.h>
+#include <learnix/arch/interrupts.h>
+#include <learnix/drivers/console/console.h>
+#include <learnix/drivers/input/ps2kb.h>
+#include <learnix/mm/memlayout.h>
+#include <learnix/mm/pmm.h>
+#include <learnix/lib/string.h>
+#include <learnix/lib/kprintf.h>
+#include <learnix/lib/kpanic.h>
 #include <limine.h>
-#include <mm/memlayout.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -15,7 +15,6 @@
 // Set the base revision to 5, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
-
 __attribute__ ((used, section (".limine_requests"))) static volatile uint64_t
     limine_base_revision[]
     = LIMINE_BASE_REVISION (5);
@@ -38,7 +37,7 @@ __attribute__ ((
     memmap_request
     = { .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 4 };
 
-// HHDM
+// HHDM (Higher Half Direct Mapping)
 __attribute__ ((
     used,
     section (".limine_requests"))) static volatile struct limine_hhdm_request
@@ -52,7 +51,6 @@ __attribute ((used, section (".limine_requests"))) static volatile struct
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
-
 __attribute__ ((used,
                 section (".limine_requests_start"))) static volatile uint64_t
     limine_requests_start_marker[]
@@ -63,26 +61,24 @@ __attribute__ ((used,
     limine_requests_end_marker[]
     = LIMINE_REQUESTS_END_MARKER;
 
-/* GLOBAL VARIABLES */
-uintptr_t hhdm_offset = 0;
-uintptr_t kernel_virt_base = 0;
-uintptr_t kernel_phys_base = 0;
+// memlayout.h global variables needed for translations
+uintptr_t hhdm_offset;
+uintptr_t kernel_virt_base;
+uintptr_t kernel_phys_base;
 
-/* kprintf() needs to know how to print characters, we route him to our
- * framebuffer console. */
+// Tell kprintf() to use the framebuffer console to print stuff.
 void
 _putchar (char character)
 {
   console_putchar (character);
 }
 
-// The following will be our kernel's entry point.
-// If renaming kmain() to something else, make sure to change the
-// linker script accordingly.
+/* Kernel's entrypoint function as defined by the linker script.
+ * Has the job to initialize all subsystems as then hand the CPU
+ * to the scheduler. */
 void
 kmain (void)
 {
-  // disable interrupts
   arch_interrupts_disable ();
 
   // Ensure the bootloader actually understands our base revision (see spec).
@@ -91,7 +87,7 @@ kmain (void)
     arch_hcf ();
   }
 
-  // save the HDDM base address for the global translation macros
+  // save the HDDM base address for the global translation macros.
   hhdm_offset = hhdm_request.response->offset;
   kernel_virt_base = exec_request.response->virtual_base;
   kernel_phys_base = exec_request.response->physical_base;
@@ -107,26 +103,22 @@ kmain (void)
   struct limine_framebuffer *framebuffer
       = framebuffer_request.response->framebuffers[0];
 
-  // Initialize the frambuffer console
+  // Initialize the frambuffer console,
   struct console_fb_info fb_info = { framebuffer->address, framebuffer->width,
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
 
-  // Initialize the CPU
+  // Minimal CPU intialization, basic interrupts and exception handlers.
   arch_stage_1 ();
-
-  // Initialize the Physical Memory Manager configured at compile-time
+  
+  // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
 
-  // Initialize the PS/2 keyboard
+  // Initialize the PS/2 keyboard.
   ps2kb_init ();
 
-  // Print welcome banner
-  kprintf ("Welcome on LearnixOS\n");
-
-  // Enable interrupts
+  // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();
 
-  // We're done, hang this core
   arch_hcf ();
 }

@@ -1,9 +1,9 @@
-#include "drivers/console.h"
-#include "io.h"
-#include <core.h>
-#include <drivers/input/ps2kb.h>
-#include <interrupts.h>
-#include <lib/kprintf.h>
+#include <learnix/arch/interrupts.h>
+#include <learnix/arch/io.h>
+#include <learnix/drivers/console/console.h>
+#include <learnix/drivers/input/ps2kb.h>
+#include <learnix/lib/kprintf.h>
+#include <learnix/lib/kpanic.h>
 #include <stdint.h>
 
 static int break_code = 0;
@@ -135,4 +135,7 @@ ps2kb_init ()
 
   // register the PS/2 keyboard interrupt handler
   arch_interrupts_register (0x21, ps2_handler, INTR_FLAG_DEFAULT);
+  
+  // unmask the IRQ line 1
+  arch_interrupts_unmask(1);
 }

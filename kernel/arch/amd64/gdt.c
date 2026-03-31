@@ -1,6 +1,6 @@
-#include "gdt.h"
-#include <lib/string.h>
+#include <learnix/lib/string.h>
 #include <stdint.h>
+#include "gdt.h"
 
 // TODO: missing TSS segment (unimplemented rn)
 static gdt_entry_t gdt[5];

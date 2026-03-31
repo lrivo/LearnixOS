@@ -1,4 +1,4 @@
-#include <lib/string.h>
+#include <learnix/lib/string.h>
 #include <stdint.h>
 
 void *

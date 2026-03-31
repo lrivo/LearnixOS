@@ -1,8 +1,8 @@
-#include "limine.h"
-#include <core.h>
-#include <lib/string.h>
-#include <mm/memlayout.h>
-#include <mm/pmm.h>
+#include <learnix/mm/memlayout.h>
+#include <learnix/mm/pmm.h>
+#include <learnix/lib/string.h>
+#include <learnix/lib/kpanic.h>
+#include <limine.h>
 #include <stddef.h>
 #include <stdint.h>
 

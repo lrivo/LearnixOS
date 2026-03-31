@@ -22,10 +22,10 @@ void arch_interrupts_register (size_t vector, intr_handler_t handler,
 /* Send the End of Interrupt command for the given vector. */
 void arch_interrupts_eoi (size_t vector);
 
-/* Enable the given interrupt vector. */
+/* Disables the given interrupt vector. */
 void arch_interrupts_mask (size_t vector);
 
-/* Disable the given interrupt vector.  */
+/* Enables the given interrupt vector.  */
 void arch_interrupts_unmask (size_t vector);
 
 /* Enable maskable hardware interrupts. */

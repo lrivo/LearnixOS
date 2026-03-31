@@ -1,8 +1,7 @@
-#include "pic.h"
-#include "drivers/console.h"
-#include <io.h>
-#include <lib/kprintf.h>
+#include <learnix/arch/interrupts.h>
+#include <learnix/arch/io.h>
 #include <stdint.h>
+#include "pic.h"
 
 #define IO_WAIT pio_write8 (0x80, 0)
 
@@ -46,9 +45,6 @@ pic_init (void)
   // mask everything on both PICs
   pio_write8 (PIC1_DATA, 0xFF);
   pio_write8 (PIC2_DATA, 0xFF);
-
-  // FIXME: move from here, just for testing now
-  pic_edit_mask (1, 0); // keyboard ISR
 }
 
 void
@@ -85,4 +81,22 @@ pic_eoi (int irq)
   if (irq >= 8)
     pio_write8 (PIC2_CMD, EOI);
   pio_write8 (PIC1_CMD, EOI);
+}
+
+void
+arch_interrupts_mask(size_t vector)
+{
+  pic_edit_mask ((int)vector, 1);
+}
+
+void
+arch_interrupts_unmask(size_t vector)
+{
+  pic_edit_mask ((int)vector, 0);
+}
+
+void
+arch_interrupts_eoi(size_t vector)
+{
+  pic_eoi ((int)vector);
 }

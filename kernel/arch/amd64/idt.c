@@ -1,26 +1,24 @@
-#include "idt.h"
-#include "lib/debug.h"
-#include "pic.h"
-#include <arch.h>
-#include <core.h>
-#include <interrupts.h>
-#include <lib/kprintf.h>
-#include <lib/string.h>
+#include <learnix/arch/arch.h>
+#include <learnix/lib/debug.h>
+#include <learnix/lib/string.h>
+#include <learnix/lib/kpanic.h>
 #include <stdint.h>
+#include "idt.h"
 
-/* Assembly interrupt stubs that call the dispatcher after saving registers and
- * pushing the vector number. */
+/* Assembly stubs defined in isr_stubs.asm that are registered directly in the IDT
+ * and then calls intr_dispatcher after saving registers and pushing the
+ * vector number and error code. */
 extern uintptr_t isr_stubs_table[];
 
-/* Dispatcher table that contains function pointers to the actual handlers. */
-static intr_handler_t handlers[IDT_ENTRIES] = { NULL };
-
+/* This is the actual Interrupt Descriptor Table that the CPU see. */
 static idtr_t idtr;
-
-/* The actual Interrupt Descriptor Table that we load in the lidt special
- * register. */
 static idt_entry_t idt[IDT_ENTRIES];
 
+/* This contains function pointers to the actual handlers for intr_dispatcher
+ * to call them. */
+static intr_handler_t handlers[IDT_ENTRIES] = { NULL };
+
+// Loads the IDT using the lidt x86 instruction.
 static inline void
 idt_load ()
 {
@@ -30,7 +28,7 @@ idt_load ()
 }
 
 /* https://wiki.osdev.org/Interrupt_Descriptor_Table#Structure_on_x86-64 */
-static void
+static inline void
 idt_set_gate (size_t idx, uintptr_t handler, uint16_t selector, uint8_t ist,
               uint8_t type_attributes)
 {
@@ -55,25 +53,7 @@ handler_div_zero (struct intr_stack_frame_t *f)
 static void
 handler_timer (struct intr_stack_frame_t *f)
 {
-  pic_eoi (0);
-}
-
-void
-arch_interrupts_mask (size_t vector)
-{
-  pic_set_mask (vector, 1);
-}
-
-void
-arch_interrupts_unmask (size_t vector)
-{
-  pic_set_mask (vector, 0);
-}
-
-void
-arch_interrupts_eoi (size_t vector)
-{
-  pic_eoi (vector);
+  arch_interrupts_eoi (0);
 }
 
 void
@@ -95,28 +75,26 @@ arch_interrupts_register (size_t vector, intr_handler_t handler,
 void
 intr_dispatcher (struct intr_stack_frame_t *frame)
 {
-  uint64_t vector_num = frame->vector_num;
-
+  int vector_num = (int)frame->vector_num;
+  
   if (handlers[vector_num])
-  {
     handlers[vector_num](frame);
-  }
+  else
+    kpanic("intr_dispatcher: %d is not registered", vector_num);
 }
 
 void
 idt_init ()
 {
-  // initially register an empty handler
+  // register the assembly stubs with an empty handler.
   for (int i = 0; i <= 33; i++)
   {
     arch_interrupts_register (i, NULL, INTR_FLAG_DEFAULT);
   }
-
-  // then load the actual exception handlers
+  
+  // load the actual handlers
   arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
-
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
 
-  // and finally tell the CPU where the IDT is with the lidt instruction
   idt_load ();
 }

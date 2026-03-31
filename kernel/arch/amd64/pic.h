@@ -32,13 +32,11 @@
 
 #define EOI 0x20
 
-/* Initializes the 8259 PIC device for protected mode, with offset remappings.
- */
+/* Initializes the 8259 PIC device for protected mode, with offset remappings. */
 void pic_init (void);
 
 /* Enable (clear) or disable (set) the given irq line. */
 void pic_edit_mask (int irq, int set);
 
-/* Sends the End of Interrupt command. Must be called at the end of every ISR.
- */
+/* Sends the End of Interrupt command. Must be called at the end of every ISR. */
 void pic_eoi (int irq);

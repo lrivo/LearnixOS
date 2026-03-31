@@ -1,6 +1,6 @@
 #pragma once
 
-#include <psf2.h>
+#include <learnix/psf2.h>
 #include <stdint.h>
 
 /* Bootloader indipendent struct with framebuffer config. */

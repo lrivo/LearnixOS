@@ -1,5 +1,5 @@
-#include <drivers/console.h>
-#include <lib/string.h>
+#include <learnix/drivers/console/console.h>
+#include <learnix/lib/string.h>
 #include <stdint.h>
 
 /* Linker symbols for the PSF2 font. */

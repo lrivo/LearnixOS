@@ -1,6 +1,6 @@
-#include "lib/kprintf.h"
-#include "mm/memlayout.h"
-#include <lib/debug.h>
+#include <learnix/lib/debug.h>
+#include <learnix/lib/kprintf.h>
+#include <learnix/mm/memlayout.h>
 #include <stddef.h>
 #include <stdint.h>
 
