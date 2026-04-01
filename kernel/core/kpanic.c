@@ -1,8 +1,8 @@
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/drivers/console/console.h>
-#include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
+#include <learnix/lib/kprintf.h>
 #include <stdarg.h>
 
 void

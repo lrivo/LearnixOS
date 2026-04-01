@@ -1,16 +1,15 @@
+#include <learnix/types.h>
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
+#include <learnix/lib/kpanic.h>
+#include <learnix/lib/kprintf.h>
+#include <learnix/lib/string.h>
 #include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
-#include <learnix/lib/string.h>
-#include <learnix/lib/kprintf.h>
-#include <learnix/lib/kpanic.h>
+#include <learnix/mm/vmm.h>
 #include <limine.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
 
 // Set the base revision to 5, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -110,12 +109,16 @@ kmain (void)
 
   // Minimal CPU intialization, basic interrupts and exception handlers.
   arch_stage_1 ();
-  
+
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
 
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
+
+  // test
+  physaddr_t p = vmm_va_to_pa((void*)vmm_get_pgtable(), (vaddr_t)kmain);
+  kprintf("kmain pa => %p\n", p);
 
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();

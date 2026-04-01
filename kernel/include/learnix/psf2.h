@@ -1,6 +1,5 @@
 #pragma once
-
-#include <stdint.h>
+#include <learnix/types.h>
 
 /* PSF2 Font header struct */
 typedef struct

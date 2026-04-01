@@ -3,23 +3,19 @@
  */
 #pragma once
 
+#include <learnix/types.h>
 #include <limine.h>
-#include <stddef.h>
 
 /* Returned by pmm_alloc() on failure, equals to uint64 max. */
 #define PMM_ALLOC_FAIL 0xFFFFFFFFFFFFFFFF
-
-/* PMM allocation flags. */
-#define PMM_NONE 0
-#define PMM_ZERO (1 >> 0)
-
-typedef size_t physaddr_t;
 
 /* Takes the bootloader's memory map and initializes the allocator's data
  * structures in physical memory. */
 void pmm_init (struct limine_memmap_response *mmap);
 
 /* Requests a single physical page. Returns the physical address. */
+#define PMM_NONE 0
+#define PMM_ZERO (1 >> 0)
 physaddr_t pmm_alloc (size_t flags);
 
 /* Requests n contiguous physical pages. Used mainly for DMA and I/O devices. */

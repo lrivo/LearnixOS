@@ -1,7 +1,7 @@
 #pragma once
 
 #include <learnix/psf2.h>
-#include <stdint.h>
+#include <learnix/types.h>
 
 /* Bootloader indipendent struct with framebuffer config. */
 struct console_fb_info

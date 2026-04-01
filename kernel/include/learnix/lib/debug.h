@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stddef.h>
+#include <learnix/types.h>
 
 /* Prints at most max_frames stack frames from the current rbp */
 void dbg_print_stack_trace (size_t max_frames);

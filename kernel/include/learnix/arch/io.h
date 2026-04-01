@@ -1,5 +1,5 @@
 #pragma once
-#include <stdint.h>
+#include <learnix/types.h>
 
 inline uint8_t
 pio_read8 (uint16_t port)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <learnix/types.h>
 
 /* Kernel code & data linker symbols. */
 extern char _kernel_code_start[];
@@ -15,6 +15,7 @@ extern uintptr_t hhdm_offset;
 extern uintptr_t kernel_virt_base;
 extern uintptr_t kernel_phys_base;
 
+// TODO move in pmm.h
 /* Page Frames math. */
 #define PGSIZE 4096
 #define PGROUNDUP(a) (((a) + PGSIZE - 1) & ~(PGSIZE - 1))

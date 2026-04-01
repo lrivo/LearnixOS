@@ -1,7 +1,7 @@
+#include <learnix/lib/kpanic.h>
+#include <learnix/lib/string.h>
 #include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
-#include <learnix/lib/string.h>
-#include <learnix/lib/kpanic.h>
 #include <limine.h>
 #include <stddef.h>
 #include <stdint.h>

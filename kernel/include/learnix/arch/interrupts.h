@@ -1,5 +1,6 @@
 #pragma once
-#include <stddef.h>
+
+#include <learnix/types.h>
 
 /* Placeholder definition that each architecture must define and pass to his
  * interrupt handlers. */

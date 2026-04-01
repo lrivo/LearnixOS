@@ -1,6 +1,6 @@
 #pragma once
+#include <learnix/arch/amd64/types.h>
 #include <learnix/arch/interrupts.h>
-#include <stdint.h>
 
 #define IDT_ENTRIES 256
 #define KERN_CODE_SEGMENT 8

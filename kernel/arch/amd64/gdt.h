@@ -1,6 +1,5 @@
 #pragma once
-
-#include <stdint.h>
+#include <learnix/arch/amd64/types.h>
 
 /* A single x86_64 GDT entry */
 typedef struct
