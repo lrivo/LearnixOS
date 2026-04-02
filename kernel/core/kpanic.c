@@ -1,6 +1,7 @@
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/drivers/console/console.h>
+#include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <stdarg.h>
@@ -20,6 +21,10 @@ kpanic (const char *fmt, ...)
   va_start (args, fmt);
   kvprintf (fmt, args);
   va_end (args);
+
+  // stack trace
+  kprintf ("\nSTACK TRACE:\n");
+  dbg_print_stack_trace (10);
 
   // halt the CPU
   arch_hcf ();

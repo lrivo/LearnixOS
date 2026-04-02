@@ -12,8 +12,8 @@
  * located in the corresponding arch/ directory.
  */
 #pragma once
-#include <learnix/types.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/types.h>
 
 typedef uintptr_t vaddr_t; // virtual address
 
@@ -33,7 +33,7 @@ int vmm_unmap (void *pgtable, vaddr_t va);
 physaddr_t vmm_va_to_pa (void *pgtable, vaddr_t va);
 
 /* Returns the HHDM address of the current page table root. */
-vaddr_t vmm_get_pgtable();
+vaddr_t vmm_get_pgtable ();
 
 /* Swaps the active page table. Used in context switches. */
 void vmm_swap_pgtable (void *new_pgtable);

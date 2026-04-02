@@ -1,22 +1,22 @@
-#include <learnix/types.h>
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
+#include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 #include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
+#include <learnix/types.h>
 #include <limine.h>
 
 // Set the base revision to 5, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
 // See specification for further info.
 __attribute__ ((used, section (".limine_requests"))) static volatile uint64_t
-    limine_base_revision[]
-    = LIMINE_BASE_REVISION (5);
+    limine_base_revision[] = LIMINE_BASE_REVISION (5);
 
 // The Limine requests can be placed anywhere, but it is important that
 // the compiler does not optimise them away, so, usually, they should
@@ -33,15 +33,13 @@ __attribute__ ((
 __attribute__ ((
     used,
     section (".limine_requests"))) static volatile struct limine_memmap_request
-    memmap_request
-    = { .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 4 };
+    memmap_request = { .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 4 };
 
 // HHDM (Higher Half Direct Mapping)
 __attribute__ ((
     used,
     section (".limine_requests"))) static volatile struct limine_hhdm_request
-    hhdm_request
-    = { .id = LIMINE_HHDM_REQUEST_ID, .revision = 4 };
+    hhdm_request = { .id = LIMINE_HHDM_REQUEST_ID, .revision = 4 };
 
 // Kernel executable load addresses
 __attribute ((used, section (".limine_requests"))) static volatile struct
@@ -52,13 +50,11 @@ __attribute ((used, section (".limine_requests"))) static volatile struct
 // These can also be moved anywhere, to any .c file, as seen fit.
 __attribute__ ((used,
                 section (".limine_requests_start"))) static volatile uint64_t
-    limine_requests_start_marker[]
-    = LIMINE_REQUESTS_START_MARKER;
+    limine_requests_start_marker[] = LIMINE_REQUESTS_START_MARKER;
 
 __attribute__ ((used,
                 section (".limine_requests_end"))) static volatile uint64_t
-    limine_requests_end_marker[]
-    = LIMINE_REQUESTS_END_MARKER;
+    limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 // memlayout.h global variables needed for translations
 uintptr_t hhdm_offset;
@@ -117,8 +113,21 @@ kmain (void)
   ps2kb_init ();
 
   // test
-  physaddr_t p = vmm_va_to_pa((void*)vmm_get_pgtable(), (vaddr_t)kmain);
-  kprintf("kmain pa => %p\n", p);
+  vaddr_t kern_pgtable = vmm_get_pgtable ();
+  // get a zero-ed physical frame
+  physaddr_t pg = pmm_alloc (PMM_ZERO);
+  kprintf ("pmm_alloc => 0x%lx\n", pg);
+  // virtually map it
+  if (vmm_map ((void *)kern_pgtable, 4096, pg, 0))
+  {
+    kprintf ("page mapped!\n");
+    memset ((void *)4096, 0x41, 4096);
+    dbg_hexdump ((void *)4096, 4);
+  }
+  vaddr_t va2 = 2 * PGSIZE;
+  vmm_map ((void *)kern_pgtable, va2, pg, 0);
+  memset ((void *)va2, 0x42, 8);
+  dbg_hexdump ((void *)4096, 4);
 
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();

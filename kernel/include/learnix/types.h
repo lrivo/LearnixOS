@@ -6,5 +6,5 @@
 #pragma once
 
 #ifdef __x86_64__
-  #include <learnix/arch/amd64/types.h>
+#include <learnix/arch/amd64/types.h>
 #endif

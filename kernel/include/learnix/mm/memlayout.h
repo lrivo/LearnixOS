@@ -22,5 +22,5 @@ extern uintptr_t kernel_phys_base;
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
 
 /* Address translation macros. */
-#define PA_TO_HHDM(pa) ((void *)((uintptr_t)pa + hhdm_offset))
+#define PA_TO_HHDM(pa) ((uintptr_t)(pa) + (hhdm_offset))
 #define HHDM_TO_PA(va) ((uintptr_t)(va) - (hhdm_offset))

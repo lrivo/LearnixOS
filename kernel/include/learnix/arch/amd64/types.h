@@ -4,10 +4,10 @@
  */
 #pragma once
 
-#include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /* Memory types */
-typedef uint64_t physaddr_t;     // physical address
-typedef uint64_t vaddr_t;     // virtual address
+typedef uint64_t physaddr_t; // physical address
+typedef uint64_t vaddr_t;    // virtual address

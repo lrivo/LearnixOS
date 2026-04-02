@@ -25,4 +25,5 @@ typedef uint64_t pte_t;  // Page Table Entry
 
 /* Utility function that walks the given PML4 table and returns pointers to
  * the HHDM addresses of all the other levels (if the pte exists). */
-pte_t *pgdirwalk(pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out, pml2_t **pml2out);
+pte_t *pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
+                  pml2_t **pml2out);

@@ -46,8 +46,15 @@ static void
 handler_div_zero (struct intr_stack_frame_t *f)
 {
   kpanic ("Division by zero at %p\n", f->rip);
-  dbg_print_stack_trace (5);
-  arch_hcf ();
+}
+
+static void
+handler_page_fault (struct intr_stack_frame_t *f)
+{
+  uint64_t faultaddr;
+  asm volatile ("mov %%cr2,%0" : "=r"(faultaddr));
+  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n", f->error,
+          faultaddr);
 }
 
 static void
@@ -94,6 +101,7 @@ idt_init ()
 
   // load the actual handlers
   arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
+  arch_interrupts_register (14, handler_page_fault, INTR_FLAG_DEFAULT);
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
 
   idt_load ();
