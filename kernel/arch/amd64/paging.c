@@ -51,3 +51,13 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
   // if we exit the loop the pte exists, return his HHDM virtual address
   return (pte_t *)&p[(va >> 12) & 0x1FF];
 }
+
+int
+pml_unused (vaddr_t pml)
+{
+  uintptr_t *p = (uintptr_t *)PGROUNDDOWN (pml);
+  for (int i = 0; i < 512; i++)
+    if (p[i] & PTE_PRESENT)
+      return 0;
+  return 1;
+}

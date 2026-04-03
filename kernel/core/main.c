@@ -124,13 +124,22 @@ kmain (void)
     memset ((void *)4096, 0x41, 4096);
     dbg_hexdump ((void *)4096, 4);
   }
+  kprintf ("\n");
   vaddr_t va2 = 2 * PGSIZE;
   vmm_map ((void *)kern_pgtable, va2, pg, 0);
   memset ((void *)va2, 0x42, 8);
-  dbg_hexdump ((void *)4096, 4);
+  dbg_hexdump ((void *)va2, 4);
+
+  kprintf ("\n\n");
+  if (vmm_unmap ((void *)kern_pgtable, va2))
+  {
+    kprintf ("page unmapped\n");
+    vmm_unmap ((void *)kern_pgtable, 4096);
+
+    kprintf ("pmm_alloc => 0x%lx\n", pmm_alloc (0));
+  }
 
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();
-
   arch_hcf ();
 }

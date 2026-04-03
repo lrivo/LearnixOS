@@ -34,6 +34,61 @@ vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags)
   }
 }
 
+int
+vmm_unmap (void *pgtable, vaddr_t va)
+{
+  /* in this case we want pgdirwalk to return us pointers to
+     the intermediate levels, in case we need to free them too. */
+  pml4_t *pml4 = (pml4_t *)pgtable;
+  pml3_t *pml3;
+  pml2_t *pml2;
+
+  // check if va is actually mapped in pgtable
+  pte_t *pte = pgdirwalk (pml4, va, 0, &pml3, &pml2);
+  if (!pte)
+    return -1;
+
+  // mark the pte not present and flush va from the TLB
+  *pte &= ~PTE_PRESENT;
+  vmm_flush_single (va);
+
+  // try to free the physical frame of va
+  pmm_unref_pg (*pte & PTE_PA_MASK);
+
+  /* if the pte is unused (all entries ~PTE_PRESENT) we can free
+     the underlying physical frame and mark it as not present
+     in the pml2. */
+  if (pml2 && pml_unused ((vaddr_t)pte))
+  {
+    // the physical address of pte is found in the pml2 entry
+    physaddr_t pa = *pml2 & PTE_PA_MASK;
+    *pml2 = 0;
+    pmm_unref_pg (pa);
+  }
+
+  /* if pml2 is unused we can free the underlying physical
+    frame and mark it as not present in the pml3. */
+  if (pml3 && pml_unused ((vaddr_t)pml2))
+  {
+    // the physical address of pml2 is found in the pml3 entry
+    physaddr_t pa = *pml3 & PTE_PA_MASK;
+    *pml3 = 0;
+    pmm_unref_pg (pa);
+  }
+
+  /* if pml3 is unused we can free the underlying physical
+     frame and mark it as not present in the pml4. */
+  if (pml3 && pml_unused ((vaddr_t)pml3))
+  {
+    // the physical address of pml3 is found in the pml4 entry
+    physaddr_t pa = pml4[PML4_IDX (va)] & PTE_PA_MASK;
+    pml4[PML4_IDX (va)] = 0;
+    pmm_unref_pg (pa);
+  }
+
+  return 1;
+}
+
 physaddr_t
 vmm_va_to_pa (void *pgtable, vaddr_t va)
 {

@@ -13,6 +13,12 @@
 
 #include <learnix/arch/amd64/types.h>
 
+#define PML4_IDX(va) (((vaddr_t)(va) >> 39) & 0x1FF)
+#define PML3_IDX(va) (((vaddr_t)(va) >> 30) & 0x1FF)
+#define PML2_IDX(va) (((vaddr_t)(va) >> 21) & 0x1FF)
+#define PML1_IDX(va) (((vaddr_t)(va) >> 12) & 0x1FF)
+#define VA_OFFSET(va) ((vaddr_t)(va) & 0x1FF)
+
 #define PTE_PRESENT (1ULL << 0)
 #define PTE_WRITE (1ULL << 1)
 #define PTE_HUGE (1ULL << 7)
@@ -27,3 +33,7 @@ typedef uint64_t pte_t;  // Page Table Entry
  * the HHDM addresses of all the other levels (if the pte exists). */
 pte_t *pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
                   pml2_t **pml2out);
+
+/* Takes an HHDM virtual address of a pml level and returns true if
+   all his entries are marked as not present, false otherwhise. */
+int pml_unused (vaddr_t pml);
