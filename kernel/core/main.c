@@ -1,5 +1,6 @@
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
+#include <learnix/cpu.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
 #include <learnix/lib/debug.h>
@@ -112,7 +113,12 @@ kmain (void)
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
 
-  // test
+  // FIXME cpuid test
+  struct cpu_info c;
+  arch_cpu_identify (&c);
+  kprintf ("CPU name: %s\n", c.name);
+
+  // FIXME pmm and vmm test
   vaddr_t kern_pgtable = vmm_get_pgtable ();
   // get a zero-ed physical frame
   physaddr_t pg = pmm_alloc (PMM_ZERO);
