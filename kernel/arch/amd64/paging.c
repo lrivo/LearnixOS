@@ -30,7 +30,6 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
       if (flags)
       {
         physaddr_t pf = pmm_alloc (PMM_ZERO);
-        kprintf ("=> pgdirwalk allocated physical frame 0x%lx\n", pf);
         p[idx] = pf | PTE_WRITE | PTE_PRESENT; // TODO: adjout mapping flags
       }
       else

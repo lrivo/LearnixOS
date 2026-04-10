@@ -15,7 +15,10 @@ extern uintptr_t hhdm_offset;
 extern uintptr_t kernel_virt_base;
 extern uintptr_t kernel_phys_base;
 
-// TODO move in pmm.h
+/* Known/constant addresses */
+// TODO: remember to not hardcode this when KASLR will be on
+#define KMALLOC_START 0xFFFF808000000000  // pml4[257]
+
 /* Page Frames math. */
 #define PGSIZE 4096
 #define PGROUNDUP(a) (((a) + PGSIZE - 1) & ~(PGSIZE - 1))

@@ -12,7 +12,7 @@ cpuid (uint32_t code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
 {
   asm volatile ("cpuid"
                 : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
-                : "a"(code)
+                : "a"(code), "c"(0)
                 : "memory");
 }
 

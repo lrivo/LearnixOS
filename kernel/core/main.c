@@ -10,6 +10,7 @@
 #include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
+#include <learnix/mm/kmalloc.h>
 #include <learnix/types.h>
 #include <limine.h>
 
@@ -109,41 +110,14 @@ kmain (void)
 
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
-
+  
+  // Initialize the kernel heap with a single 4KB page
+  vaddr_t kern_pgtable = vmm_get_pgtable();
+  vmm_map((void*)kern_pgtable, KMALLOC_START, pmm_alloc(PMM_ZERO), 0);
+  kmalloc_init((void*)KMALLOC_START, 4096);
+  
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
-
-  // FIXME cpuid test
-  struct cpu_info c;
-  arch_cpu_identify (&c);
-  kprintf ("CPU name: %s\n", c.name);
-
-  // FIXME pmm and vmm test
-  vaddr_t kern_pgtable = vmm_get_pgtable ();
-  // get a zero-ed physical frame
-  physaddr_t pg = pmm_alloc (PMM_ZERO);
-  kprintf ("pmm_alloc => 0x%lx\n", pg);
-  // virtually map it
-  if (vmm_map ((void *)kern_pgtable, 4096, pg, 0))
-  {
-    kprintf ("page mapped!\n");
-    memset ((void *)4096, 0x41, 4096);
-    dbg_hexdump ((void *)4096, 4);
-  }
-  kprintf ("\n");
-  vaddr_t va2 = 2 * PGSIZE;
-  vmm_map ((void *)kern_pgtable, va2, pg, 0);
-  memset ((void *)va2, 0x42, 8);
-  dbg_hexdump ((void *)va2, 4);
-
-  kprintf ("\n\n");
-  if (vmm_unmap ((void *)kern_pgtable, va2))
-  {
-    kprintf ("page unmapped\n");
-    vmm_unmap ((void *)kern_pgtable, 4096);
-
-    kprintf ("pmm_alloc => 0x%lx\n", pmm_alloc (0));
-  }
 
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();
