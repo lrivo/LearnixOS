@@ -19,13 +19,25 @@
 int
 vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags)
 {
+  pml4_t *pml4 = (pml4_t*)pgtable;
+  pml3_t *pml3;
+  pml2_t *pml2;
+
   // make sure va is mapped, allocate missing pml3 and/or pml2
-  pte_t *pte = pgdirwalk ((pml4_t *)pgtable, va, 1, NULL, NULL);
+  pte_t *pte = pgdirwalk (pml4, va, 1, &pml3, &pml2);
 
   if (pte)
   {
-    // TODO parse the flags argument
-    *pte = PGROUNDDOWN (pa) | PTE_PRESENT | PTE_WRITE;
+    uint64_t pte_flags = PTE_PRESENT | PTE_WRITE;
+    // make sure all levels are mapped as user
+    if (flags & VMM_FLAG_USER) 
+    {
+      pml4[PML4_IDX(va)] |= PTE_USER;
+      *pml3 |= PTE_USER;
+      *pml2 |= PTE_USER;
+      pte_flags |= PTE_USER; 
+    }
+    *pte = PGROUNDDOWN (pa) | pte_flags;
     return 1;
   }
   else
@@ -95,7 +107,7 @@ vmm_va_to_pa (void *pgtable, vaddr_t va)
   // walk the page table without allocating not present intermediate levels
   pte_t *pte = pgdirwalk ((pml4_t *)pgtable, va, 0, NULL, NULL);
 
-  return pte ? (*pte & PTE_PA_MASK) + (va & 0x1FF) : 0;
+  return pte ? (*pte & PTE_PA_MASK) + (va & 0xFFF) : 0;
 }
 
 inline vaddr_t
@@ -103,7 +115,7 @@ vmm_get_pgtable (void)
 {
   vaddr_t val;
   asm volatile ("mov %%cr3,%0" : "=r"(val));
-  return (vaddr_t)PA_TO_HHDM (val);
+  return (vaddr_t)PA_TO_HHDM (val & ~0xFFFULL);
 }
 
 inline void
@@ -117,5 +129,5 @@ vmm_flush_all (void)
 {
   uint64_t cr3old;
   asm volatile ("mov %%cr3,%0" : "=r"(cr3old));
-  asm volatile ("mov %0,%%cr3" : "=r"(cr3old));
+  asm volatile ("mov %0,%%cr3" :: "r"(cr3old));
 }

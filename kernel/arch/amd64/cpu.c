@@ -35,8 +35,7 @@ arch_cpu_identify (struct cpu_info *c)
 
   // 0x8000_0001 Extended Processor Feature Identifier
   char *n = c->name;
-  int leaf = 0x80000002;
-  for (; leaf <= 0x80000004; n += 4, leaf++)
+  for (uint32_t leaf = 0x80000002; leaf <= 0x80000004; n += 4, leaf++)
   {
     cpuid (leaf, &eax, &ebx, &ecx, &edx);
     memcpy (n, &eax, 4);

@@ -53,8 +53,27 @@ handler_page_fault (struct intr_stack_frame_t *f)
 {
   uint64_t faultaddr;
   asm volatile ("mov %%cr2,%0" : "=r"(faultaddr));
-  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n", f->error,
-          faultaddr);
+  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n rip: %p\n rsp: %p\n", 
+           f->error, faultaddr, f->rip, f->rsp);
+}
+
+static void
+handler_gpf (struct intr_stack_frame_t *f)
+{
+  kpanic ("General protection fault at %p wit error %lu\n",
+          f->rip, f->error);
+}
+
+static void
+handler_double_fault(struct intr_stack_frame_t *f)
+{
+  kpanic ("Double fault at %p\n", f->rip);
+}
+
+static void
+handler_invalid_tss(struct intr_stack_frame_t *f)
+{
+  kpanic ("Invalid TSS: %lu", f->error);
 }
 
 static void
@@ -101,6 +120,9 @@ idt_init ()
 
   // load the actual handlers
   arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
+  arch_interrupts_register (8, handler_double_fault, INTR_FLAG_DEFAULT);
+  arch_interrupts_register (10, handler_invalid_tss, INTR_FLAG_DEFAULT);
+  arch_interrupts_register (13, handler_gpf, INTR_FLAG_DEFAULT);
   arch_interrupts_register (14, handler_page_fault, INTR_FLAG_DEFAULT);
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
 

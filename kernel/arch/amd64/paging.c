@@ -15,6 +15,7 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
   {
     // extract the 0-511 index of the current level
     int idx = (va >> shift) & 0x1FF;
+    kprintf("[%d] idx %d addr %p\n", i, idx, p);
 
     // return the middle levels if requested
     if (pml3out && i == 1)
@@ -30,7 +31,7 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
       if (flags)
       {
         physaddr_t pf = pmm_alloc (PMM_ZERO);
-        p[idx] = pf | PTE_WRITE | PTE_PRESENT; // TODO: adjout mapping flags
+        p[idx] = pf | PTE_WRITE | PTE_PRESENT;
       }
       else
       {
@@ -48,6 +49,7 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
   }
 
   // if we exit the loop the pte exists, return his HHDM virtual address
+  kprintf("pte index %d\n", (va >> 12) & 0x1FF);
   return (pte_t *)&p[(va >> 12) & 0x1FF];
 }
 

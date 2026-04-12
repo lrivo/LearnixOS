@@ -113,13 +113,44 @@ kmain (void)
   
   // Initialize the kernel heap with a single 4KB page
   vaddr_t kern_pgtable = vmm_get_pgtable();
+  kprintf("kernel pgtable at pa %p\n", HHDM_TO_PA(kern_pgtable));
   vmm_map((void*)kern_pgtable, KMALLOC_START, pmm_alloc(PMM_ZERO), 0);
   kmalloc_init((void*)KMALLOC_START, 4096);
   
   // Initialize the PS/2 keyboard.
-  ps2kb_init ();
-
+  // ps2kb_init ();
+  
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();
+  
+  // FIXME: test usermode jump
+  vaddr_t user_code_va = 0x1000;
+  vaddr_t user_stack_va = user_code_va + PGSIZE;
+
+  // map a physical page for user code at 0x1000 as user
+  physaddr_t user_code_pg = pmm_alloc(PMM_ZERO);
+  kprintf("user_code_pg at %p\n", user_code_pg);
+  vmm_map((void*)kern_pgtable, user_code_va, user_code_pg, VMM_FLAG_USER);  
+  vmm_flush_all();
+  kprintf("user code is at %p\n", vmm_va_to_pa((void*)kern_pgtable, user_code_va));
+  
+  // copy the code into the userspace code page
+  extern void usermode_test(void);
+  void* hhdmp = (void*)PA_TO_HHDM(user_code_pg);
+  memcpy(hhdmp, usermode_test, 16);
+  dbg_hexdump((void*)hhdmp, 2);
+
+  // map a physical page for user stack at 0x2000
+  physaddr_t user_stack_pg = pmm_alloc(PMM_ZERO);
+  kprintf("user_stack_pg at %p\n", user_stack_pg);
+  vmm_map((void*)kern_pgtable, user_stack_va, user_stack_pg, VMM_FLAG_USER);
+  vmm_flush_all();
+  kprintf("user stack is at %p\n", vmm_va_to_pa((void*)kern_pgtable, user_stack_va));
+  
+  // try jumping to usermode
+  extern void jump_usermode(void* rip, void* rsp);
+  kprintf("jumping to rip=%p rsp=%p\n", (void*)user_code_va, (void*)(user_stack_va + 4096));
+  jump_usermode((void*)user_code_va, (void*)(user_stack_va + 4096));
+
   arch_hcf ();
 }
