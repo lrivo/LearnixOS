@@ -78,13 +78,11 @@ wrmsr(uint32_t msr, uint64_t value)
   asm volatile("wrmsr" :: "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
 }
 
-void
-test_syscall_entry(void)
-{
-  uint64_t rax;
-  asm volatile ("mov %%rax,%0" : "=r"(rax));
-  kprintf("[ SYS_ENTRY ] called syscall %lu\n", rax);
-}
+struct cpu {
+  uint64_t user_rsp;  // scratch space for userland rsp
+  uint64_t kern_rsp;  // top of this CPU kernel stack
+};
+static struct cpu cpu0;
 
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
@@ -141,7 +139,7 @@ kmain (void)
   kmalloc_init((void*)KMALLOC_START, 4096);
   
   // Initialize the PS/2 keyboard.
-  ps2kb_init ();
+  //ps2kb_init ();
   
   // FIXME: test usermode jump
   vaddr_t user_code_va = 0x1000;
@@ -175,9 +173,16 @@ kmain (void)
   uint64_t star = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
   wrmsr(0xC0000081, star); 
   // 3) set the entrypoint in LSTAR
-  wrmsr(0xC0000082, (uint64_t)test_syscall_entry);
+  extern void syscall_handler(void);
+  wrmsr(0xC0000082, (uint64_t)syscall_handler);
   // 4) clear IF on syscall
   wrmsr(0xC0000084, (1 << 9));
+  // 5) setup kernel stack for syscalls
+  cpu0.user_rsp = 0;
+  cpu0.kern_rsp = (uint64_t)kmalloc(1024) + 1024;
+  kprintf("cpu0.kern_rsp = %p\n", cpu0.kern_rsp);
+  wrmsr(0xC0000102, (uint64_t)&cpu0);
+  kprintf("GSMSR = %p\n", rdmsr(0xC0000102));
  
   // try jumping to usermode and syscall
   extern void jump_usermode(void* rip, void* rsp);

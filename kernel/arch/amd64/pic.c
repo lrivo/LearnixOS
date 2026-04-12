@@ -45,6 +45,8 @@ pic_init (void)
   // mask everything on both PICs
   pio_write8 (PIC1_DATA, 0xFF);
   pio_write8 (PIC2_DATA, 0xFF);
+  
+  pic_edit_mask (0, 0);
 }
 
 void

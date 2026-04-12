@@ -2,6 +2,7 @@
 #include <learnix/arch/arch.h>
 #include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
+#include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 #include <stdint.h>
 
@@ -85,6 +86,7 @@ handler_invalid_tss(struct intr_stack_frame_t *f)
 static void
 handler_timer (struct intr_stack_frame_t *f)
 {
+  kprintf(".");
   arch_interrupts_eoi (0);
 }
 
