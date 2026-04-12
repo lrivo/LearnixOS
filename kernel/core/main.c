@@ -63,6 +63,29 @@ uintptr_t hhdm_offset;
 uintptr_t kernel_virt_base;
 uintptr_t kernel_phys_base;
 
+// FIXME: syscall test handler
+inline uint64_t
+rdmsr(uint32_t msr)
+{
+  uint32_t low, high;
+  asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
+  return ((uint64_t)high << 32) | low;
+}
+
+inline void
+wrmsr(uint32_t msr, uint64_t value)
+{
+  asm volatile("wrmsr" :: "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
+}
+
+void
+test_syscall_entry(void)
+{
+  uint64_t rax;
+  asm volatile ("mov %%rax,%0" : "=r"(rax));
+  kprintf("[ SYS_ENTRY ] called syscall %lu\n", rax);
+}
+
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
 _putchar (char character)
@@ -118,10 +141,7 @@ kmain (void)
   kmalloc_init((void*)KMALLOC_START, 4096);
   
   // Initialize the PS/2 keyboard.
-  // ps2kb_init ();
-  
-  // We're done, enable interrupts and hang this core
-  arch_interrupts_enable ();
+  ps2kb_init ();
   
   // FIXME: test usermode jump
   vaddr_t user_code_va = 0x1000;
@@ -147,10 +167,24 @@ kmain (void)
   vmm_flush_all();
   kprintf("user stack is at %p\n", vmm_va_to_pa((void*)kern_pgtable, user_stack_va));
   
-  // try jumping to usermode
+  // FIXME: test syscall setup
+  // 1) enable the syscall instruction
+  uint64_t efer = rdmsr(0xC0000080);
+  wrmsr(0xC0000080, efer | (1 << 0)); 
+  // 2) set the STAR register 
+  uint64_t star = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
+  wrmsr(0xC0000081, star); 
+  // 3) set the entrypoint in LSTAR
+  wrmsr(0xC0000082, (uint64_t)test_syscall_entry);
+  // 4) clear IF on syscall
+  wrmsr(0xC0000084, (1 << 9));
+ 
+  // try jumping to usermode and syscall
   extern void jump_usermode(void* rip, void* rsp);
   kprintf("jumping to rip=%p rsp=%p\n", (void*)user_code_va, (void*)(user_stack_va + 4096));
   jump_usermode((void*)user_code_va, (void*)(user_stack_va + 4096));
 
+  // We're done, enable interrupts and hang this core
+  arch_interrupts_enable ();
   arch_hcf ();
 }

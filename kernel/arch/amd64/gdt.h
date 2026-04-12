@@ -54,10 +54,15 @@ struct tss_entry
 struct gdt
 {
   struct gdt_entry null;
+  #define GDT_KCODE 0x8
   struct gdt_entry kcode;
+  #define GDT_KDATA 0x10
   struct gdt_entry kdata;
+  #define GDT_UDATA 0x18
+  struct gdt_entry udata; // udata and ucode must be switched for STAR
+  #define GDT_UCODE 0x20
   struct gdt_entry ucode;
-  struct gdt_entry udata;
+  #define GDT_TSS 0x28
   struct tss_descriptor tss;
 } __attribute__ ((packed));
 

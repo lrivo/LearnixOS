@@ -49,6 +49,12 @@ handler_div_zero (struct intr_stack_frame_t *f)
 }
 
 static void
+handler_invalid_opcode (struct intr_stack_frame_t *f)
+{
+  kpanic ("Invalid opcode at %p\n", f->rip);
+}
+
+static void
 handler_page_fault (struct intr_stack_frame_t *f)
 {
   uint64_t faultaddr;
@@ -120,6 +126,7 @@ idt_init ()
 
   // load the actual handlers
   arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
+  arch_interrupts_register (6, handler_invalid_opcode, INTR_FLAG_DEFAULT);
   arch_interrupts_register (8, handler_double_fault, INTR_FLAG_DEFAULT);
   arch_interrupts_register (10, handler_invalid_tss, INTR_FLAG_DEFAULT);
   arch_interrupts_register (13, handler_gpf, INTR_FLAG_DEFAULT);

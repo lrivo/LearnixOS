@@ -75,7 +75,7 @@ gdt_init ()
   gdt.kdata.access = 0x92;
   gdt.kdata.flags = 0xC0;
 
-  // 0x18: User Mode Code Segment
+  // 0x20: User Mode Code Segment
   gdt.ucode.limit = 0;
   gdt.ucode.base_low = 0;
   gdt.ucode.base_mid = 0;
@@ -93,7 +93,7 @@ gdt_init ()
   gdt.ucode.access = 0xFA;
   gdt.ucode.flags = 0xA0;
 
-  // 0x20: User Mode Data Segment
+  // 0x18: User Mode Data Segment
   gdt.udata.limit = 0;
   gdt.udata.base_low = 0;
   gdt.udata.base_mid = 0;
