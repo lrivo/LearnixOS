@@ -35,18 +35,24 @@ __attribute__ ((
 __attribute__ ((
     used,
     section (".limine_requests"))) static volatile struct limine_memmap_request
-    memmap_request = { .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 4 };
+    memmap_request = { .id = LIMINE_MEMMAP_REQUEST_ID, .revision = 5 };
 
 // HHDM (Higher Half Direct Mapping)
 __attribute__ ((
     used,
     section (".limine_requests"))) static volatile struct limine_hhdm_request
-    hhdm_request = { .id = LIMINE_HHDM_REQUEST_ID, .revision = 4 };
+    hhdm_request = { .id = LIMINE_HHDM_REQUEST_ID, .revision = 5 };
+
+// RSDP (Root System Description Pointer) for ACPI
+__attribute__ ((
+    used,
+    section (".limine_requests"))) static volatile struct limine_rsdp_request
+    rsdp_request = { .id = LIMINE_RSDP_REQUEST_ID, .revision = 5 };
 
 // Kernel executable load addresses
 __attribute ((used, section (".limine_requests"))) static volatile struct
     limine_executable_address_request exec_request
-    = { .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID, .revision = 4 };
+    = { .id = LIMINE_EXECUTABLE_ADDRESS_REQUEST_ID, .revision = 5 };
 
 // Finally, define the start and end markers for the Limine requests.
 // These can also be moved anywhere, to any .c file, as seen fit.
@@ -83,6 +89,40 @@ struct cpu {
   uint64_t kern_rsp;  // top of this CPU kernel stack
 };
 static struct cpu cpu0;
+
+// FIXME: RSDP ACPI struct
+struct rsdp_v2 
+{
+  char signature[8];
+  uint8_t checksum;
+  char oem_id[6];
+  uint8_t revision;
+  uint32_t unused;
+  // v2
+  uint32_t length;
+  uint64_t xsdt_addr;
+  uint8_t extended_checksum;
+  uint8_t reserved[3];
+} __attribute__ ((packed));
+
+struct xsdt_hdr
+{
+  char signature[4];
+  uint32_t length;
+  uint8_t revision;
+  uint8_t checksum;
+  char oem_id[6];
+  char oem_table_id[8];
+  uint32_t oem_revision;
+  uint32_t creator_id;
+  uint32_t creator_revision;
+} __attribute__ ((packed));
+
+struct xsdt
+{
+  struct xsdt_hdr hdr;
+  uint64_t entries[]; 
+} __attribute__ ((packed));
 
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
@@ -125,9 +165,33 @@ kmain (void)
   struct console_fb_info fb_info = { framebuffer->address, framebuffer->width,
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
+  
+  // FIXME: test RSDP
+  struct rsdp_v2 *xsdp = (struct rsdp_v2*)rsdp_request.response->address;
+  kprintf("xsdp at %p\n", xsdp);
+  if (xsdp->revision != 2)
+  {
+    kpanic("ACPI revision 2 not supported");
+  }
+  struct xsdt *xsdt = (struct xsdt*)PA_TO_HHDM(xsdp->xsdt_addr); 
+  kprintf("xsdt at %p\n", xsdt);
+  int entries = (xsdt->hdr.length - sizeof(struct xsdt_hdr)) / 8;
+  kprintf("xsdt has %d entries\n", entries);
+  for (int i = 0; i < entries; i++)
+  { 
+    char signature[5];
+    struct xsdt_hdr *e = (struct xsdt_hdr*)PA_TO_HHDM(xsdt->entries[i]);
+    memcpy(signature, e->signature, 4);
+    signature[4] = 0;
+    kprintf("XSDT[%d] is %s\n", i, signature);
+  }
 
   // Minimal CPU intialization, basic interrupts and exception handlers.
   arch_stage_1 ();
+  
+  
+  arch_interrupts_enable (); 
+  arch_hcf();
 
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);

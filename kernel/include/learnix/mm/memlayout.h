@@ -17,7 +17,8 @@ extern uintptr_t kernel_phys_base;
 
 /* Known/constant addresses */
 // TODO: remember to not hardcode this when KASLR will be on
-#define KMALLOC_START 0xFFFF808000000000  // pml4[257]
+#define KMALLOC_START 0xFFFF808000000000ULL   // pml4[257]
+#define LAPIC_VIRT_BASE 0xFFFFFFFF80000000ULL
 
 /* Page Frames math. */
 #define PGSIZE 4096

@@ -85,6 +85,7 @@ pic_eoi (int irq)
   pio_write8 (PIC1_CMD, EOI);
 }
 
+/*
 void
 arch_interrupts_mask (size_t vector)
 {
@@ -101,4 +102,4 @@ void
 arch_interrupts_eoi (size_t vector)
 {
   pic_eoi ((int)vector);
-}
+}*/

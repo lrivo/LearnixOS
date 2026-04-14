@@ -37,7 +37,13 @@ vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags)
       *pml2 |= PTE_USER;
       pte_flags |= PTE_USER; 
     }
+    // map only the PTE as cache-disabled
+    if (flags & VMM_FLAG_NOCACHE)
+    {
+      pte_flags |= PTE_PWT | PTE_PCD; 
+    }
     *pte = PGROUNDDOWN (pa) | pte_flags;
+    vmm_flush_single (va);
     return 1;
   }
   else

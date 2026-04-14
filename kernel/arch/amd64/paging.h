@@ -21,6 +21,8 @@
 
 #define PTE_PRESENT (1ULL << 0)
 #define PTE_WRITE (1ULL << 1)
+#define PTE_PWT (1ULL << 3)   // write-through
+#define PTE_PCD (1ULL << 4)   // cache disable
 #define PTE_USER (1ULL << 2)
 #define PTE_HUGE (1ULL << 7)
 #define PTE_PA_MASK 0x000FFFFFFFFFF000ULL

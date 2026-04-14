@@ -1,6 +1,6 @@
 #include "gdt.h"
 #include "idt.h"
-#include "pic.h"
+#include "lapic.h"
 #include <learnix/arch/arch.h>
 #include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
@@ -22,7 +22,7 @@ arch_stage_1 ()
 {
   gdt_init ();
   idt_init ();
-  pic_init ();
+  lapic_init ();
 }
 
 void
