@@ -30,6 +30,8 @@ lapic_init ()
      is not covered by HHDM. */ 
   vmm_map((void*)vmm_get_pgtable(), LAPIC_VIRT_BASE, get_lapic_base_phys(), VMM_FLAG_NOCACHE); 
 
+  kprintf("BSP LAPIC id %x\n", lapic_read_reg(0x20));
+
   // Enable the LAPIC by setting APIC_BASE_MSR 11th bit
   wrmsr(APIC_BASE_MSR, rdmsr(APIC_BASE_MSR) | (1 << 11));
   
@@ -40,7 +42,7 @@ lapic_init ()
   lapic_write_reg(LAPIC_TIMER_LVT, 0x10000);  
   
   lapic_write_reg(LAPIC_TIMER_DCR, 0x3); 
-  lapic_write_reg(LAPIC_TIMER_ICR, 0xFFFFFF);
+  lapic_write_reg(LAPIC_TIMER_ICR, 0xFFFFFFF);
  
   // Enable the LAPIC timer in periodic mode on vector 32
   lapic_write_reg(LAPIC_TIMER_LVT, 0x20 | 0x20000);

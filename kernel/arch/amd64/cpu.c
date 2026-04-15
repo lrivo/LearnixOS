@@ -16,13 +16,18 @@ cpuid (uint32_t code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
                 : "memory");
 }
 
-// FIXME: maybe this can be moved somewhere else?
+// TODO: move this in a main.c for amd64 with arch_stage_2
 void
 arch_stage_1 ()
 {
   gdt_init ();
   idt_init ();
-  lapic_init ();
+}
+
+void
+arch_stage_2()
+{
+  lapic_init();
 }
 
 void

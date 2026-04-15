@@ -1,3 +1,4 @@
+#include "learnix/arch/amd64/types.h"
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/cpu.h>
@@ -7,12 +8,13 @@
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
+#include <learnix/mm/kmalloc.h>
 #include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
-#include <learnix/mm/kmalloc.h>
 #include <learnix/types.h>
 #include <limine.h>
+#include <stdint.h>
 
 // Set the base revision to 5, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -71,27 +73,28 @@ uintptr_t kernel_phys_base;
 
 // FIXME: syscall test handler
 inline uint64_t
-rdmsr(uint32_t msr)
+rdmsr (uint32_t msr)
 {
   uint32_t low, high;
-  asm volatile("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
+  asm volatile ("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
   return ((uint64_t)high << 32) | low;
 }
 
 inline void
-wrmsr(uint32_t msr, uint64_t value)
+wrmsr (uint32_t msr, uint64_t value)
 {
-  asm volatile("wrmsr" :: "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
+  asm volatile ("wrmsr" ::"c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
 }
 
-struct cpu {
-  uint64_t user_rsp;  // scratch space for userland rsp
-  uint64_t kern_rsp;  // top of this CPU kernel stack
+struct cpu
+{
+  uint64_t user_rsp; // scratch space for userland rsp
+  uint64_t kern_rsp; // top of this CPU kernel stack
 };
 static struct cpu cpu0;
 
 // FIXME: RSDP ACPI struct
-struct rsdp_v2 
+struct rsdp_v2
 {
   char signature[8];
   uint8_t checksum;
@@ -121,8 +124,55 @@ struct xsdt_hdr
 struct xsdt
 {
   struct xsdt_hdr hdr;
-  uint64_t entries[]; 
+  uint64_t entries[];
 } __attribute__ ((packed));
+
+struct madt
+{
+  struct xsdt_hdr hdr;
+  uint32_t lapic_addr;
+  uint32_t flags;
+  uint8_t entries[];
+};
+
+struct madt_ioapic
+{
+  uint8_t type; // 1
+  uint8_t len;
+  uint8_t id;
+  uint8_t reserved;
+  uint32_t ioapic_addr; // physical address of the IOAPIC
+  uint32_t global_system_interrupt_base;
+};
+
+// interrupt source override
+struct madt_iso
+{
+  uint8_t type; // 2
+  uint8_t len;
+  uint8_t bus_src;
+  uint8_t irq_src;
+  uint32_t gsi;
+  uint16_t flags;
+};
+
+uint32_t
+ioapic_read (const vaddr_t base, const uint8_t reg)
+{
+  volatile uint32_t *regsel = (volatile uint32_t *)(base);
+  volatile uint32_t *iowin = (volatile uint32_t *)(base + 0x10);
+  *regsel = (uint32_t)reg;
+  return *iowin;
+}
+
+void
+ioapic_write (const vaddr_t base, const uint8_t reg, const uint32_t value)
+{
+  volatile uint32_t *regsel = (volatile uint32_t *)(base);
+  volatile uint32_t *iowin = (volatile uint32_t *)(base + 0x10);
+  *regsel = (uint32_t)reg;
+  *iowin = value;
+}
 
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
@@ -165,93 +215,135 @@ kmain (void)
   struct console_fb_info fb_info = { framebuffer->address, framebuffer->width,
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
-  
+
+  kprintf ("HHDM offset %p\n", hhdm_offset);
+
+  // Essential CPU initialization like exception handlers
+  arch_stage_1 ();
+
   // FIXME: test RSDP
-  struct rsdp_v2 *xsdp = (struct rsdp_v2*)rsdp_request.response->address;
-  kprintf("xsdp at %p\n", xsdp);
+  physaddr_t ioapic_addr = 0;
+  struct rsdp_v2 *xsdp = (struct rsdp_v2 *)rsdp_request.response->address;
+  kprintf ("xsdp at %p\n", xsdp);
   if (xsdp->revision != 2)
   {
-    kpanic("ACPI revision 2 not supported");
+    kpanic ("ACPI revision 2 not supported");
   }
-  struct xsdt *xsdt = (struct xsdt*)PA_TO_HHDM(xsdp->xsdt_addr); 
-  kprintf("xsdt at %p\n", xsdt);
-  int entries = (xsdt->hdr.length - sizeof(struct xsdt_hdr)) / 8;
-  kprintf("xsdt has %d entries\n", entries);
+  struct xsdt *xsdt = (struct xsdt *)PA_TO_HHDM (xsdp->xsdt_addr);
+  kprintf ("xsdt at %p\n", xsdt);
+  int entries = (xsdt->hdr.length - sizeof (struct xsdt_hdr)) / 8;
+  kprintf ("xsdt has %d entries\n", entries);
   for (int i = 0; i < entries; i++)
-  { 
+  {
     char signature[5];
-    struct xsdt_hdr *e = (struct xsdt_hdr*)PA_TO_HHDM(xsdt->entries[i]);
-    memcpy(signature, e->signature, 4);
+    struct xsdt_hdr *e = (struct xsdt_hdr *)PA_TO_HHDM (xsdt->entries[i]);
+    memcpy (signature, e->signature, 4);
     signature[4] = 0;
-    kprintf("XSDT[%d] is %s\n", i, signature);
+    kprintf ("XSDT[%d] is %s\n", i, signature);
+    if (signature[0] == 'A' && signature[1] == 'P' && signature[2] == 'I'
+        && signature[3] == 'C')
+    {
+      struct madt *madt = (struct madt *)e;
+      vaddr_t curr = (vaddr_t)madt->entries;
+      vaddr_t end = (vaddr_t)madt + madt->hdr.length;
+      while (curr < end)
+      {
+        uint8_t type = *(uint8_t *)curr;
+        uint8_t len = *(uint8_t *)(curr + 1);
+        kprintf ("MADT entry with type %d\n", (int)type);
+        if (type == 1)
+        {
+          struct madt_ioapic *io = (struct madt_ioapic *)curr;
+          ioapic_addr = (physaddr_t)io->ioapic_addr;
+        }
+        if (type == 2)
+        {
+          struct madt_iso *iso = (struct madt_iso *)curr;
+          kprintf ("bus_irq %d => gsi %d\n", (int)iso->irq_src, (int)iso->gsi);
+        }
+        curr += len;
+      }
+    }
   }
-
-  // Minimal CPU intialization, basic interrupts and exception handlers.
-  arch_stage_1 ();
-  
-  
-  arch_interrupts_enable (); 
-  arch_hcf();
 
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
-  
+
   // Initialize the kernel heap with a single 4KB page
-  vaddr_t kern_pgtable = vmm_get_pgtable();
-  kprintf("kernel pgtable at pa %p\n", HHDM_TO_PA(kern_pgtable));
-  vmm_map((void*)kern_pgtable, KMALLOC_START, pmm_alloc(PMM_ZERO), 0);
-  kmalloc_init((void*)KMALLOC_START, 4096);
-  
+  vaddr_t kern_pgtable = vmm_get_pgtable ();
+  kprintf ("kernel pgtable at pa %p\n", HHDM_TO_PA (kern_pgtable));
+  vmm_map ((void *)kern_pgtable, KMALLOC_START, pmm_alloc (PMM_ZERO), 0);
+  kmalloc_init ((void *)KMALLOC_START, 4096);
+
+  arch_stage_2 ();
+
+  // TEST: ioapic keyboard redirection
+  vaddr_t ioapic_virt = PA_TO_HHDM (ioapic_addr);
+  vmm_map ((void *)kern_pgtable, ioapic_virt, ioapic_addr, VMM_FLAG_NOCACHE);
+  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x12));
+  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x13));
+  ioapic_write (ioapic_virt, 0x13, 0x0);
+  ioapic_write (ioapic_virt, 0x12, 0x21);
+  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x12));
+  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x13));
+
   // Initialize the PS/2 keyboard.
-  //ps2kb_init ();
-  
+  ps2kb_init ();
+
+  arch_interrupts_enable ();
+  arch_hcf ();
+
   // FIXME: test usermode jump
   vaddr_t user_code_va = 0x1000;
   vaddr_t user_stack_va = user_code_va + PGSIZE;
 
   // map a physical page for user code at 0x1000 as user
-  physaddr_t user_code_pg = pmm_alloc(PMM_ZERO);
-  kprintf("user_code_pg at %p\n", user_code_pg);
-  vmm_map((void*)kern_pgtable, user_code_va, user_code_pg, VMM_FLAG_USER);  
-  vmm_flush_all();
-  kprintf("user code is at %p\n", vmm_va_to_pa((void*)kern_pgtable, user_code_va));
-  
+  physaddr_t user_code_pg = pmm_alloc (PMM_ZERO);
+  kprintf ("user_code_pg at %p\n", user_code_pg);
+  vmm_map ((void *)kern_pgtable, user_code_va, user_code_pg, VMM_FLAG_USER);
+  vmm_flush_all ();
+  kprintf ("user code is at %p\n",
+           vmm_va_to_pa ((void *)kern_pgtable, user_code_va));
+
   // copy the code into the userspace code page
-  extern void usermode_test(void);
-  void* hhdmp = (void*)PA_TO_HHDM(user_code_pg);
-  memcpy(hhdmp, usermode_test, 16);
-  dbg_hexdump((void*)hhdmp, 2);
+  extern void usermode_test (void);
+  void *hhdmp = (void *)PA_TO_HHDM (user_code_pg);
+  memcpy (hhdmp, usermode_test, 16);
+  dbg_hexdump ((void *)hhdmp, 2);
 
   // map a physical page for user stack at 0x2000
-  physaddr_t user_stack_pg = pmm_alloc(PMM_ZERO);
-  kprintf("user_stack_pg at %p\n", user_stack_pg);
-  vmm_map((void*)kern_pgtable, user_stack_va, user_stack_pg, VMM_FLAG_USER);
-  vmm_flush_all();
-  kprintf("user stack is at %p\n", vmm_va_to_pa((void*)kern_pgtable, user_stack_va));
-  
+  physaddr_t user_stack_pg = pmm_alloc (PMM_ZERO);
+  kprintf ("user_stack_pg at %p\n", user_stack_pg);
+  vmm_map ((void *)kern_pgtable, user_stack_va, user_stack_pg, VMM_FLAG_USER);
+  vmm_flush_all ();
+  kprintf ("user stack is at %p\n",
+           vmm_va_to_pa ((void *)kern_pgtable, user_stack_va));
+
   // FIXME: test syscall setup
   // 1) enable the syscall instruction
-  uint64_t efer = rdmsr(0xC0000080);
-  wrmsr(0xC0000080, efer | (1 << 0)); 
-  // 2) set the STAR register 
-  uint64_t star = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
-  wrmsr(0xC0000081, star); 
+  uint64_t efer = rdmsr (0xC0000080);
+  wrmsr (0xC0000080, efer | (1 << 0));
+  // 2) set the STAR register
+  uint64_t star
+      = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
+  wrmsr (0xC0000081, star);
   // 3) set the entrypoint in LSTAR
-  extern void syscall_handler(void);
-  wrmsr(0xC0000082, (uint64_t)syscall_handler);
+  extern void syscall_handler (void);
+  wrmsr (0xC0000082, (uint64_t)syscall_handler);
   // 4) clear IF on syscall
-  wrmsr(0xC0000084, (1 << 9));
+  wrmsr (0xC0000084, (1 << 9));
   // 5) setup kernel stack for syscalls
   cpu0.user_rsp = 0;
-  cpu0.kern_rsp = (uint64_t)kmalloc(1024) + 1024;
-  kprintf("cpu0.kern_rsp = %p\n", cpu0.kern_rsp);
-  wrmsr(0xC0000102, (uint64_t)&cpu0);
-  kprintf("GSMSR = %p\n", rdmsr(0xC0000102));
- 
+  cpu0.kern_rsp = (uint64_t)kmalloc (1024) + 1024;
+  kprintf ("cpu0.kern_rsp = %p\n", cpu0.kern_rsp);
+  wrmsr (0xC0000102, (uint64_t)&cpu0);
+  kprintf ("GSMSR = %p\n", rdmsr (0xC0000102));
+
   // try jumping to usermode and syscall
-  extern void jump_usermode(void* rip, void* rsp);
-  kprintf("jumping to rip=%p rsp=%p\n", (void*)user_code_va, (void*)(user_stack_va + 4096));
-  jump_usermode((void*)user_code_va, (void*)(user_stack_va + 4096));
+  extern void jump_usermode (void *rip, void *rsp);
+  kprintf ("jumping to rip=%p rsp=%p\n", (void *)user_code_va,
+           (void *)(user_stack_va + 4096));
+  jump_usermode ((void *)user_code_va, (void *)(user_stack_va + 4096));
 
   // We're done, enable interrupts and hang this core
   arch_interrupts_enable ();
