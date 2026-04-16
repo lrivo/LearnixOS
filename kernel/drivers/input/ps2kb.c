@@ -1,3 +1,4 @@
+#include "learnix/acpi.h"
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/io.h>
 #include <learnix/drivers/console/console.h>
@@ -93,17 +94,29 @@ ps2_cmd_data (uint8_t cmd, uint8_t data)
   pio_write8 (DATA_PORT, data);
 }
 
+/* Flush the controller's buffer */
+static inline void
+ps2kb_flush (void)
+{
+  while (pio_read8 (CONTROL_PORT) & 0x01)
+    pio_read8 (DATA_PORT);
+}
+
 void
 ps2kb_init ()
 {
-  // flush the output buffer
-  while (pio_read8 (CONTROL_PORT) & 0x01)
-    pio_read8 (DATA_PORT);
-  kprintf ("ps2kb_init: output buffer flushed\n");
+  // return early if the motherboard does not support PS/2
+  if (!acpi_get_ps2())
+  {
+    kprintf("[ DBG ] ps2kb_init: PS/2 controller not supported");
+    return;
+  }
 
-  // disable both ports before self tests
+  // disable both PS/2 ports
   ps2_cmd (0xAD);
   ps2_cmd (0xA7);
+
+  ps2kb_flush ();
 
   // controller self-test
   ps2_cmd (0xAA);
@@ -133,8 +146,7 @@ ps2kb_init ()
   // re-enable both ports
   ps2_cmd (0xAE);
   ps2_cmd (0xA8);
-  
+
   // register the PS/2 keyboard interrupt handler
   arch_interrupts_register (0x21, ps2_handler, INTR_FLAG_DEFAULT);
-  kprintf ("PS/2 keyboard registered\n");
 }

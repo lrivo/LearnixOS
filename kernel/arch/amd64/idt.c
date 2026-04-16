@@ -60,25 +60,24 @@ handler_page_fault (struct intr_stack_frame_t *f)
 {
   uint64_t faultaddr;
   asm volatile ("mov %%cr2,%0" : "=r"(faultaddr));
-  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n rip: %p\n rsp: %p\n", 
-           f->error, faultaddr, f->rip, f->rsp);
+  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n rip: %p\n rsp: %p\n",
+          f->error, faultaddr, f->rip, f->rsp);
 }
 
 static void
 handler_gpf (struct intr_stack_frame_t *f)
 {
-  kpanic ("General protection fault at %p wit error %lu\n",
-          f->rip, f->error);
+  kpanic ("General protection fault at %p wit error %lu\n", f->rip, f->error);
 }
 
 static void
-handler_double_fault(struct intr_stack_frame_t *f)
+handler_double_fault (struct intr_stack_frame_t *f)
 {
   kpanic ("Double fault at %p\n", f->rip);
 }
 
 static void
-handler_invalid_tss(struct intr_stack_frame_t *f)
+handler_invalid_tss (struct intr_stack_frame_t *f)
 {
   kpanic ("Invalid TSS: %lu", f->error);
 }
@@ -86,7 +85,6 @@ handler_invalid_tss(struct intr_stack_frame_t *f)
 static void
 handler_timer (struct intr_stack_frame_t *f)
 {
-  kprintf(".");
   arch_interrupts_eoi (0);
 }
 

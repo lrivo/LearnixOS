@@ -152,7 +152,6 @@ kmain (void)
   ps2kb_init ();
 
   arch_interrupts_enable ();
-  arch_hcf ();
 
   // FIXME: test usermode jump
   vaddr_t user_code_va = 0x1000;
@@ -206,7 +205,6 @@ kmain (void)
            (void *)(user_stack_va + 4096));
   jump_usermode ((void *)user_code_va, (void *)(user_stack_va + 4096));
 
-  // We're done, enable interrupts and hang this core
-  arch_interrupts_enable ();
+  // now the kernel is fully initialized, never return here
   arch_hcf ();
 }

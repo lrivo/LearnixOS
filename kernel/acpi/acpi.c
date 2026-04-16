@@ -40,6 +40,16 @@ xsdt_validate_checksum (struct xsdt *xsdt)
 }
 
 static void
+fadt_parse (struct fadt *fadt)
+{
+  if (!xsdt_validate_checksum((struct xsdt*)fadt))
+    kpanic ("fadt_parse: invalid checksum");
+
+  // 8042 PS/2 controller support (bit 1 set)
+  acpi_summary.ps2_exists = fadt->iapc_boot_arch & 2;
+}
+
+static void
 madt_parse (struct madt *madt)
 {
   /* MADT has variable lenght entries so we can't precompute them
@@ -87,6 +97,8 @@ xsdt_parse (struct xsdt *xsdt)
     // call the correct parser for the entry's type
     if (memcmp (e->signature, "APIC", 4) == 0)
       madt_parse ((struct madt *)e);
+    else if (memcmp(e->signature, "FACP", 4) == 0)
+      fadt_parse ((struct fadt*)e);
   }
 
   return;
@@ -134,8 +146,14 @@ acpi_init ()
   }
 }
 
+bool
+acpi_get_ps2 (void)
+{
+  return acpi_summary.ps2_exists;
+}
+
 physaddr_t
-acpi_get_ioapic ()
+acpi_get_ioapic (void)
 {
   return acpi_summary.ioapic_addr;
 }
