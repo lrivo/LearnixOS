@@ -1,4 +1,5 @@
 #pragma once
+#include <learnix/arch/amd64/types.h>
 
 /*
  *  63      52 51              12 11  10     9   8     7   0 
@@ -19,5 +20,7 @@
 #define LAPIC_TIMER_ICR 0x380
 #define LAPIC_TIMER_DCR 0xE0
 
-void
-lapic_init ();
+/* Returns the LAPIC ID of the active core. */
+uint8_t lapic_get_id(void);
+
+void lapic_init ();

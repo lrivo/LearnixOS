@@ -1,4 +1,5 @@
 #include "learnix/arch/amd64/types.h"
+#include <learnix/acpi.h>
 #include <learnix/arch/arch.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/cpu.h>
@@ -45,12 +46,6 @@ __attribute__ ((
     section (".limine_requests"))) static volatile struct limine_hhdm_request
     hhdm_request = { .id = LIMINE_HHDM_REQUEST_ID, .revision = 5 };
 
-// RSDP (Root System Description Pointer) for ACPI
-__attribute__ ((
-    used,
-    section (".limine_requests"))) static volatile struct limine_rsdp_request
-    rsdp_request = { .id = LIMINE_RSDP_REQUEST_ID, .revision = 5 };
-
 // Kernel executable load addresses
 __attribute ((used, section (".limine_requests"))) static volatile struct
     limine_executable_address_request exec_request
@@ -92,87 +87,6 @@ struct cpu
   uint64_t kern_rsp; // top of this CPU kernel stack
 };
 static struct cpu cpu0;
-
-// FIXME: RSDP ACPI struct
-struct rsdp_v2
-{
-  char signature[8];
-  uint8_t checksum;
-  char oem_id[6];
-  uint8_t revision;
-  uint32_t unused;
-  // v2
-  uint32_t length;
-  uint64_t xsdt_addr;
-  uint8_t extended_checksum;
-  uint8_t reserved[3];
-} __attribute__ ((packed));
-
-struct xsdt_hdr
-{
-  char signature[4];
-  uint32_t length;
-  uint8_t revision;
-  uint8_t checksum;
-  char oem_id[6];
-  char oem_table_id[8];
-  uint32_t oem_revision;
-  uint32_t creator_id;
-  uint32_t creator_revision;
-} __attribute__ ((packed));
-
-struct xsdt
-{
-  struct xsdt_hdr hdr;
-  uint64_t entries[];
-} __attribute__ ((packed));
-
-struct madt
-{
-  struct xsdt_hdr hdr;
-  uint32_t lapic_addr;
-  uint32_t flags;
-  uint8_t entries[];
-};
-
-struct madt_ioapic
-{
-  uint8_t type; // 1
-  uint8_t len;
-  uint8_t id;
-  uint8_t reserved;
-  uint32_t ioapic_addr; // physical address of the IOAPIC
-  uint32_t global_system_interrupt_base;
-};
-
-// interrupt source override
-struct madt_iso
-{
-  uint8_t type; // 2
-  uint8_t len;
-  uint8_t bus_src;
-  uint8_t irq_src;
-  uint32_t gsi;
-  uint16_t flags;
-};
-
-uint32_t
-ioapic_read (const vaddr_t base, const uint8_t reg)
-{
-  volatile uint32_t *regsel = (volatile uint32_t *)(base);
-  volatile uint32_t *iowin = (volatile uint32_t *)(base + 0x10);
-  *regsel = (uint32_t)reg;
-  return *iowin;
-}
-
-void
-ioapic_write (const vaddr_t base, const uint8_t reg, const uint32_t value)
-{
-  volatile uint32_t *regsel = (volatile uint32_t *)(base);
-  volatile uint32_t *iowin = (volatile uint32_t *)(base + 0x10);
-  *regsel = (uint32_t)reg;
-  *iowin = value;
-}
 
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
@@ -216,55 +130,11 @@ kmain (void)
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
 
-  kprintf ("HHDM offset %p\n", hhdm_offset);
-
   // Essential CPU initialization like exception handlers
   arch_stage_1 ();
 
-  // FIXME: test RSDP
-  physaddr_t ioapic_addr = 0;
-  struct rsdp_v2 *xsdp = (struct rsdp_v2 *)rsdp_request.response->address;
-  kprintf ("xsdp at %p\n", xsdp);
-  if (xsdp->revision != 2)
-  {
-    kpanic ("ACPI revision 2 not supported");
-  }
-  struct xsdt *xsdt = (struct xsdt *)PA_TO_HHDM (xsdp->xsdt_addr);
-  kprintf ("xsdt at %p\n", xsdt);
-  int entries = (xsdt->hdr.length - sizeof (struct xsdt_hdr)) / 8;
-  kprintf ("xsdt has %d entries\n", entries);
-  for (int i = 0; i < entries; i++)
-  {
-    char signature[5];
-    struct xsdt_hdr *e = (struct xsdt_hdr *)PA_TO_HHDM (xsdt->entries[i]);
-    memcpy (signature, e->signature, 4);
-    signature[4] = 0;
-    kprintf ("XSDT[%d] is %s\n", i, signature);
-    if (signature[0] == 'A' && signature[1] == 'P' && signature[2] == 'I'
-        && signature[3] == 'C')
-    {
-      struct madt *madt = (struct madt *)e;
-      vaddr_t curr = (vaddr_t)madt->entries;
-      vaddr_t end = (vaddr_t)madt + madt->hdr.length;
-      while (curr < end)
-      {
-        uint8_t type = *(uint8_t *)curr;
-        uint8_t len = *(uint8_t *)(curr + 1);
-        kprintf ("MADT entry with type %d\n", (int)type);
-        if (type == 1)
-        {
-          struct madt_ioapic *io = (struct madt_ioapic *)curr;
-          ioapic_addr = (physaddr_t)io->ioapic_addr;
-        }
-        if (type == 2)
-        {
-          struct madt_iso *iso = (struct madt_iso *)curr;
-          kprintf ("bus_irq %d => gsi %d\n", (int)iso->irq_src, (int)iso->gsi);
-        }
-        curr += len;
-      }
-    }
-  }
+  // ACPI parsing
+  acpi_init ();
 
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
@@ -275,17 +145,8 @@ kmain (void)
   vmm_map ((void *)kern_pgtable, KMALLOC_START, pmm_alloc (PMM_ZERO), 0);
   kmalloc_init ((void *)KMALLOC_START, 4096);
 
+  // post ACPI initialization, for running processes
   arch_stage_2 ();
-
-  // TEST: ioapic keyboard redirection
-  vaddr_t ioapic_virt = PA_TO_HHDM (ioapic_addr);
-  vmm_map ((void *)kern_pgtable, ioapic_virt, ioapic_addr, VMM_FLAG_NOCACHE);
-  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x12));
-  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x13));
-  ioapic_write (ioapic_virt, 0x13, 0x0);
-  ioapic_write (ioapic_virt, 0x12, 0x21);
-  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x12));
-  kprintf ("%x\n", ioapic_read (ioapic_virt, 0x13));
 
   // Initialize the PS/2 keyboard.
   ps2kb_init ();

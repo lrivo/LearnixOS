@@ -9,7 +9,7 @@ static physaddr_t
 get_lapic_base_phys ()
 {
   return rdmsr(APIC_BASE_MSR) & ~0xFFFULL; 
-} 
+}
 
 static inline uint32_t
 lapic_read_reg(uint32_t reg)
@@ -23,14 +23,18 @@ lapic_write_reg(uint32_t reg, uint32_t value)
   *((volatile uint32_t*)(LAPIC_VIRT_BASE + reg)) = value;
 }
 
+uint8_t
+lapic_get_id (void)
+{
+  return (lapic_read_reg(0x20) >> 24) & 0xFF;
+}
+
 void
 lapic_init ()
 {
   /* Map the LAPIC register at a known virtual address, because MMIO
      is not covered by HHDM. */ 
   vmm_map((void*)vmm_get_pgtable(), LAPIC_VIRT_BASE, get_lapic_base_phys(), VMM_FLAG_NOCACHE); 
-
-  kprintf("BSP LAPIC id %x\n", lapic_read_reg(0x20));
 
   // Enable the LAPIC by setting APIC_BASE_MSR 11th bit
   wrmsr(APIC_BASE_MSR, rdmsr(APIC_BASE_MSR) | (1 << 11));
@@ -48,8 +52,11 @@ lapic_init ()
   lapic_write_reg(LAPIC_TIMER_LVT, 0x20 | 0x20000);
 }
 
+// TODO: this should be moved in a general amd64/interrupt.c 
+// that can fallback to the legacy PIC if the APIC is not found
 void
 arch_interrupts_eoi (size_t vector)
 {
+  (void)vector;
   lapic_write_reg(LAPIC_EOI, 0);
 }

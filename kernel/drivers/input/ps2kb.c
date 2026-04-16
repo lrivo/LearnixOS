@@ -99,6 +99,7 @@ ps2kb_init ()
   // flush the output buffer
   while (pio_read8 (CONTROL_PORT) & 0x01)
     pio_read8 (DATA_PORT);
+  kprintf ("ps2kb_init: output buffer flushed\n");
 
   // disable both ports before self tests
   ps2_cmd (0xAD);
@@ -132,7 +133,8 @@ ps2kb_init ()
   // re-enable both ports
   ps2_cmd (0xAE);
   ps2_cmd (0xA8);
-
+  
   // register the PS/2 keyboard interrupt handler
   arch_interrupts_register (0x21, ps2_handler, INTR_FLAG_DEFAULT);
+  kprintf ("PS/2 keyboard registered\n");
 }
