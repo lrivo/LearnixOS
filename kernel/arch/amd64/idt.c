@@ -1,10 +1,11 @@
 #include "idt.h"
+#include "learnix/arch/interrupts.h"
+#include "learnix/arch/types.h"
 #include <learnix/interrupts.h>
 #include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
-#include <stdint.h>
 
 /* Assembly stubs defined in isr_stubs.asm that are registered directly in the
  * IDT and then calls intr_dispatcher after saving registers and pushing the
@@ -49,6 +50,15 @@ handler_timer (struct intr_trap_frame *tf)
   arch_interrupts_eoi (0);
 }
 
+static void
+handler_page_fault (struct intr_trap_frame *tf)
+{
+  vaddr_t fault;
+  asm volatile ("mov %%cr2,%0" : "=r"(fault));
+  kpanic ("[ PAGE FAULT ]\nRIP: %lx\nRSP: %lx\nError Code: %lx\nCR2: %p\n",
+          tf->rip, tf->rsp, tf->error, fault);
+}
+
 void
 arch_interrupts_register (size_t vector, void *handler, intr_flags_t flags)
 {
@@ -85,6 +95,7 @@ idt_init ()
   }
 
   // load the actual handlers
+  arch_interrupts_register (14, handler_page_fault, INTR_FLAG_DEFAULT);
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
 
   idt_load ();

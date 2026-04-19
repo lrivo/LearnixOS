@@ -17,7 +17,6 @@ cpuid (uint32_t code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
                 : "memory");
 }
 
-// TODO: move this in a main.c for amd64 with arch_stage_2
 void
 arch_stage_1 ()
 {

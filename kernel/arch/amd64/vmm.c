@@ -1,3 +1,4 @@
+#include "learnix/arch/types.h"
 #include "paging.h"
 #include <learnix/arch/memlayout.h>
 #include <learnix/mm/pmm.h>
@@ -67,7 +68,7 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
       return (pte_t *)&p[idx];
 
     // make p point to the HHDM address of the next level
-    p = (uintptr_t *)PA_TO_HHDM (p[idx] & PTE_PA_MASK);
+    p = (uintptr_t *)P2V (p[idx] & PTE_PA_MASK);
   }
 
   // if we exit the loop the pte exists, return his HHDM virtual address
@@ -179,7 +180,13 @@ vmm_get_pgtable (void)
 {
   vaddr_t val;
   asm volatile ("mov %%cr3,%0" : "=r"(val));
-  return (vaddr_t)PA_TO_HHDM (val & ~0xFFFULL);
+  return (vaddr_t)P2V (val & ~0xFFFULL);
+}
+
+inline void
+vmm_swap_pgtable (void *new_pgtable)
+{
+  asm volatile ("mov %0,%%cr3" ::"r"(V2P (new_pgtable)));
 }
 
 inline void

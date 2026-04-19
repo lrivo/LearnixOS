@@ -28,5 +28,5 @@ extern paddr_t kernel_phys_base;
 #define PGROUNDDOWN(a) (((a)) & ~(PGSIZE - 1))
 
 /* HHDM translation macros. */
-#define PA_TO_HHDM(pa) ((uintptr_t)(pa) + (hhdm_offset))
-#define HHDM_TO_PA(va) ((uintptr_t)(va) - (hhdm_offset))
+#define P2V(pa) ((uintptr_t)(pa) + (hhdm_offset))
+#define V2P(va) ((uintptr_t)(va) - (hhdm_offset))

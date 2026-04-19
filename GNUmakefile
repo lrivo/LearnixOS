@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -enable-kvm -cpu host
+QEMUFLAGS := -m 2G
 
 override IMAGE_NAME := learnixos
 

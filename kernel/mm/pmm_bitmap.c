@@ -133,7 +133,7 @@ pmm_init (struct limine_memmap_response *mmap)
         && bitmap_size + refcount_size <= entry->length)
     {
       /* We allocate bitmap and refcount contiguously in physical memory. */
-      bitmap = (uint8_t *)PA_TO_HHDM (entry->base);
+      bitmap = (uint8_t *)P2V (entry->base);
       bitmap_end = (uintptr_t)bitmap + bitmap_size;
       refcount = (uint16_t *)bitmap_end;
       refcount_end = (uintptr_t)refcount + refcount_size;
@@ -165,8 +165,8 @@ pmm_init (struct limine_memmap_response *mmap)
   }
 
   /* 4) mark the bitmap and refcount[] as allocated in the bitmap itself. */
-  size_t start = pa_to_idx (PGROUNDDOWN (HHDM_TO_PA (bitmap)));
-  size_t end = pa_to_idx (PGROUNDUP (HHDM_TO_PA (refcount + refcount_size)));
+  size_t start = pa_to_idx (PGROUNDDOWN (V2P (bitmap)));
+  size_t end = pa_to_idx (PGROUNDUP (V2P (refcount + refcount_size)));
   bitmap_assign_range (start, end, 1);
 
   pmm_test ();
@@ -212,7 +212,7 @@ pmm_alloc (size_t flags)
       // apply flags
       if (flags & PMM_ZERO)
       {
-        memset ((void *)PA_TO_HHDM (pa), 0, PGSIZE);
+        memset ((void *)P2V (pa), 0, PGSIZE);
       }
 
       return pa;
@@ -240,8 +240,7 @@ pmm_unref_pg (paddr_t pa)
   size_t idx = pa_to_idx (pa);
 
   /* Can't free bitmap or refcount[] physical pages. */
-  if (idx >= pa_to_idx (HHDM_TO_PA (bitmap))
-      && idx <= pa_to_idx (HHDM_TO_PA (refcount_end)))
+  if (idx >= pa_to_idx (V2P (bitmap)) && idx <= pa_to_idx (V2P (refcount_end)))
   {
     kpanic ("pmm_unref_pg: pinned pa");
   }

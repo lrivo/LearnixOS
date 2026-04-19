@@ -89,7 +89,7 @@ xsdt_parse (struct xsdt *xsdt)
   for (uint32_t i = 0; i < entries; ++i)
   {
     // current entry's header
-    struct xsdt_hdr *e = (struct xsdt_hdr *)PA_TO_HHDM (xsdt->entries[i]);
+    struct xsdt_hdr *e = (struct xsdt_hdr *)P2V (xsdt->entries[i]);
 
     // call the correct parser for the entry's type
     if (memcmp (e->signature, "APIC", 4) == 0)
@@ -126,7 +126,7 @@ acpi_init ()
       kpanic ("acpi_init: invalid XSDP checksum");
 
     // follow the XSDT pointer
-    xsdt_parse ((struct xsdt *)PA_TO_HHDM (xsdp->xsdt_addr));
+    xsdt_parse ((struct xsdt *)P2V (xsdp->xsdt_addr));
 
     break;
   }

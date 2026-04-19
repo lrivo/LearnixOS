@@ -1,4 +1,5 @@
 #include "gdt.h"
+#include "learnix/arch/types.h"
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 #include <stdint.h>
@@ -6,9 +7,6 @@
 static struct gdt gdt;
 static struct tss tss;
 static struct gdtr gdtr;
-
-// FIXME: just a test kernel stack
-static char kern_stack[4096];
 
 static inline void
 gdt_load ()
@@ -29,9 +27,6 @@ tss_load ()
 void
 gdt_init ()
 {
-  memset (kern_stack, 0, 4096);
-  kprintf ("gdt_init => kernel stack at %p\n", kern_stack);
-
   // 0x00: Null descriptor
   memset (&gdt, 0, sizeof (struct gdt_entry));
 
@@ -122,9 +117,14 @@ gdt_init ()
   gdt.tss.flags = 0x40;
 
   memset (&tss.tss0, 0, sizeof (struct tss_entry));
-  tss.tss0.rsp0 = (vaddr_t)kern_stack + 4096;
   tss.tss0.iopb = (uint16_t)sizeof (struct tss_entry);
 
   gdt_load ();
   tss_load ();
+}
+
+void
+tss_set_rsp0 (vaddr_t addr)
+{
+  tss.tss0.rsp0 = addr;
 }

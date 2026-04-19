@@ -6,9 +6,11 @@
 #include <learnix/interrupts.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/lib/string.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
+#include <learnix/process.h>
 #include <learnix/types.h>
 #include <limine.h>
 
@@ -113,7 +115,6 @@ kmain (void)
 
   // Initialize the kernel heap with a single 4KB page
   vaddr_t kern_pgtable = vmm_get_pgtable ();
-  kprintf ("kernel pgtable at pa %p\n", HHDM_TO_PA (kern_pgtable));
   vmm_map ((void *)kern_pgtable, KMALLOC_START, pmm_alloc (PMM_ZERO), 0);
   kmalloc_init ((void *)KMALLOC_START, 4096);
 
@@ -123,7 +124,29 @@ kmain (void)
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
 
+  // TEST: start a dummy process
+  vaddr_t ucode = 0x400000UL;        // 4MB
+  vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
+  struct process *p = proc_create ();
+  kprintf ("Process's kernel stack at %p\n", p->kstack);
+
+  extern void test_ucode (void);
+  paddr_t ucode_pf = pmm_alloc (PMM_NONE);
+  memcpy ((void *)P2V (ucode_pf), (void *)test_ucode, 32);
+
+  // map userspace code and stack in p->pgtable
+  vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
+  vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
+           VMM_FLAG_USER | VMM_FLAG_WRITE);
+
+  // initialize the process's trap frame
+  arch_proc_init (p, ucode, ustack + PGSIZE);
+
+  // TEST: should jump in usermode
+  vmm_swap_pgtable (p->pgtable);
+  arch_context_switch (NULL, p); // only updates TSS for now
+  arch_test_jump_usermode (p->tf);
+
   // At this point the kernel is fully initialized
-  arch_interrupts_enable ();
   arch_cpu_hcf ();
 }

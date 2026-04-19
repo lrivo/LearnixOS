@@ -84,3 +84,5 @@ extern void reloadSegments ();
 
 /* Called by arch_stage_1() to initialize the GDT. */
 void gdt_init ();
+
+void tss_set_rsp0 (vaddr_t addr);
