@@ -1,11 +1,11 @@
 #include "gdt.h"
 #include "idt.h"
-#include "lapic.h"
 #include "ioapic.h"
-#include <learnix/arch/arch.h>
+#include "lapic.h"
 #include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
+#include <stdint.h>
 
 static inline void
 cpuid (uint32_t code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
@@ -26,10 +26,10 @@ arch_stage_1 ()
 }
 
 void
-arch_stage_2()
+arch_stage_2 ()
 {
-  lapic_init();
-  ioapic_init();
+  lapic_init ();
+  ioapic_init ();
 }
 
 void
@@ -59,7 +59,7 @@ arch_cpu_identify (struct cpu_info *c)
 }
 
 void
-arch_hcf ()
+arch_cpu_hcf ()
 {
   for (;;)
   {

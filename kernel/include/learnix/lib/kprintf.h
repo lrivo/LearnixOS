@@ -30,9 +30,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
-
-#include <stdarg.h>
-#include <stddef.h>
+#include <learnix/types.h>
 
 /**
  * Output a character to a custom device like UART, used by the printf()

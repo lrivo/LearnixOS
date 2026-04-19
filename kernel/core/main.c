@@ -1,21 +1,16 @@
-#include "learnix/arch/amd64/types.h"
 #include <learnix/acpi.h>
-#include <learnix/arch/arch.h>
-#include <learnix/arch/interrupts.h>
+#include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
-#include <learnix/lib/debug.h>
+#include <learnix/interrupts.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
-#include <learnix/lib/string.h>
 #include <learnix/mm/kmalloc.h>
-#include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/types.h>
 #include <limine.h>
-#include <stdint.h>
 
 // Set the base revision to 5, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -62,31 +57,8 @@ __attribute__ ((used,
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
 // memlayout.h global variables needed for translations
-uintptr_t hhdm_offset;
-uintptr_t kernel_virt_base;
-uintptr_t kernel_phys_base;
-
-// FIXME: syscall test handler
-inline uint64_t
-rdmsr (uint32_t msr)
-{
-  uint32_t low, high;
-  asm volatile ("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
-  return ((uint64_t)high << 32) | low;
-}
-
-inline void
-wrmsr (uint32_t msr, uint64_t value)
-{
-  asm volatile ("wrmsr" ::"c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
-}
-
-struct cpu
-{
-  uint64_t user_rsp; // scratch space for userland rsp
-  uint64_t kern_rsp; // top of this CPU kernel stack
-};
-static struct cpu cpu0;
+vaddr_t hhdm_offset, kernel_virt_base;
+paddr_t kernel_phys_base;
 
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
@@ -106,7 +78,7 @@ kmain (void)
   // Ensure the bootloader actually understands our base revision (see spec).
   if (LIMINE_BASE_REVISION_SUPPORTED (limine_base_revision) == false)
   {
-    arch_hcf ();
+    arch_cpu_hcf ();
   }
 
   // save the HDDM base address for the global translation macros.
@@ -118,7 +90,7 @@ kmain (void)
   if (framebuffer_request.response == NULL
       || framebuffer_request.response->framebuffer_count < 1)
   {
-    arch_hcf ();
+    arch_cpu_hcf ();
   }
 
   // Fetch the first framebuffer.
@@ -151,60 +123,7 @@ kmain (void)
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
 
+  // At this point the kernel is fully initialized
   arch_interrupts_enable ();
-
-  // FIXME: test usermode jump
-  vaddr_t user_code_va = 0x1000;
-  vaddr_t user_stack_va = user_code_va + PGSIZE;
-
-  // map a physical page for user code at 0x1000 as user
-  physaddr_t user_code_pg = pmm_alloc (PMM_ZERO);
-  kprintf ("user_code_pg at %p\n", user_code_pg);
-  vmm_map ((void *)kern_pgtable, user_code_va, user_code_pg, VMM_FLAG_USER);
-  vmm_flush_all ();
-  kprintf ("user code is at %p\n",
-           vmm_va_to_pa ((void *)kern_pgtable, user_code_va));
-
-  // copy the code into the userspace code page
-  extern void usermode_test (void);
-  void *hhdmp = (void *)PA_TO_HHDM (user_code_pg);
-  memcpy (hhdmp, usermode_test, 16);
-  dbg_hexdump ((void *)hhdmp, 2);
-
-  // map a physical page for user stack at 0x2000
-  physaddr_t user_stack_pg = pmm_alloc (PMM_ZERO);
-  kprintf ("user_stack_pg at %p\n", user_stack_pg);
-  vmm_map ((void *)kern_pgtable, user_stack_va, user_stack_pg, VMM_FLAG_USER);
-  vmm_flush_all ();
-  kprintf ("user stack is at %p\n",
-           vmm_va_to_pa ((void *)kern_pgtable, user_stack_va));
-
-  // FIXME: test syscall setup
-  // 1) enable the syscall instruction
-  uint64_t efer = rdmsr (0xC0000080);
-  wrmsr (0xC0000080, efer | (1 << 0));
-  // 2) set the STAR register
-  uint64_t star
-      = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
-  wrmsr (0xC0000081, star);
-  // 3) set the entrypoint in LSTAR
-  extern void syscall_handler (void);
-  wrmsr (0xC0000082, (uint64_t)syscall_handler);
-  // 4) clear IF on syscall
-  wrmsr (0xC0000084, (1 << 9));
-  // 5) setup kernel stack for syscalls
-  cpu0.user_rsp = 0;
-  cpu0.kern_rsp = (uint64_t)kmalloc (1024) + 1024;
-  kprintf ("cpu0.kern_rsp = %p\n", cpu0.kern_rsp);
-  wrmsr (0xC0000102, (uint64_t)&cpu0);
-  kprintf ("GSMSR = %p\n", rdmsr (0xC0000102));
-
-  // try jumping to usermode and syscall
-  extern void jump_usermode (void *rip, void *rsp);
-  kprintf ("jumping to rip=%p rsp=%p\n", (void *)user_code_va,
-           (void *)(user_stack_va + 4096));
-  jump_usermode ((void *)user_code_va, (void *)(user_stack_va + 4096));
-
-  // now the kernel is fully initialized, never return here
-  arch_hcf ();
+  arch_cpu_hcf ();
 }

@@ -1,14 +1,8 @@
 #pragma once
-
 #include <learnix/types.h>
 
-/* Placeholder definition that each architecture must define and pass to his
- * interrupt handlers. */
-struct intr_stack_frame_t;
-
-typedef void (*intr_handler_t) (struct intr_stack_frame_t *f);
-
-/* Additional flags (that are translated for the target architecture). */
+/* Generalized interrupt flags, translated by arch_interrupts_register()
+ * for the target architecture. */
 typedef enum
 {
   INTR_FLAG_DEFAULT = 0, /* kernel privilege, disables other interrupts */
@@ -17,7 +11,7 @@ typedef enum
 } intr_flags_t;
 
 /* Maps the given interrupt vector to a generic C handler function. */
-void arch_interrupts_register (size_t vector, intr_handler_t handler,
+void arch_interrupts_register (size_t vector, void *handler,
                                intr_flags_t flags);
 
 /* Send the End of Interrupt command for the given vector. */

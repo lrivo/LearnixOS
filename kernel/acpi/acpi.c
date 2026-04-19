@@ -3,12 +3,9 @@
  *  and populate a generalized table with the most important
  *  informations that arch-specific code can then use.
  */
-#include "learnix/acpi.h"
-#include "learnix/arch/amd64/types.h"
-#include "learnix/lib/kpanic.h"
-#include "learnix/mm/memlayout.h"
-#include <learnix/lib/debug.h>
-#include <learnix/lib/kprintf.h>
+#include <learnix/acpi.h>
+#include <learnix/arch/memlayout.h>
+#include <learnix/lib/kpanic.h>
 #include <learnix/lib/string.h>
 #include <learnix/types.h>
 #include <limine.h>
@@ -42,7 +39,7 @@ xsdt_validate_checksum (struct xsdt *xsdt)
 static void
 fadt_parse (struct fadt *fadt)
 {
-  if (!xsdt_validate_checksum((struct xsdt*)fadt))
+  if (!xsdt_validate_checksum ((struct xsdt *)fadt))
     kpanic ("fadt_parse: invalid checksum");
 
   // 8042 PS/2 controller support (bit 1 set)
@@ -63,7 +60,7 @@ madt_parse (struct madt *madt)
     case 1:
     {
       struct madt_entry_ioapic *io = (struct madt_entry_ioapic *)curr;
-      acpi_summary.ioapic_addr = (physaddr_t)io->ioapic_addr;
+      acpi_summary.ioapic_addr = (paddr_t)io->ioapic_addr;
       break;
     }
     case 2:
@@ -97,8 +94,8 @@ xsdt_parse (struct xsdt *xsdt)
     // call the correct parser for the entry's type
     if (memcmp (e->signature, "APIC", 4) == 0)
       madt_parse ((struct madt *)e);
-    else if (memcmp(e->signature, "FACP", 4) == 0)
-      fadt_parse ((struct fadt*)e);
+    else if (memcmp (e->signature, "FACP", 4) == 0)
+      fadt_parse ((struct fadt *)e);
   }
 
   return;
@@ -136,14 +133,6 @@ acpi_init ()
   default:
     kpanic ("acpi_init: unknown ACPI revision %u", rsdp->revision);
   }
-
-  kprintf ("ACPI Summary\n");
-  kprintf ("I/O APIC address => %p\n", acpi_summary.ioapic_addr);
-  for (int i = 0; i < acpi_summary.overrides_len; i++)
-  {
-    kprintf (" irq %d to gsi %d\n", acpi_summary.overrides[i].irq_src,
-             acpi_summary.overrides[i].gsi);
-  }
 }
 
 bool
@@ -152,7 +141,7 @@ acpi_get_ps2 (void)
   return acpi_summary.ps2_exists;
 }
 
-physaddr_t
+paddr_t
 acpi_get_ioapic (void)
 {
   return acpi_summary.ioapic_addr;

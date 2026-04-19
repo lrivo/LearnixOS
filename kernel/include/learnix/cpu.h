@@ -1,8 +1,3 @@
-/*
- * This header defines an architecture independent cpu_info
- * struct that the generic code can use to obtain informations
- * about the running CPU.
- */
 #pragma once
 #include <learnix/types.h>
 
@@ -12,6 +7,7 @@ struct cpu_info
   void *arch_data;
 
   /* human readable full name */
+  char vendor1[16];
   char name[64];
 
   /* address space */
@@ -24,6 +20,15 @@ struct cpu_info
   uint64_t bugs;
 };
 
-/* Fills the cpu_info struct using architecture specific
-   instructions like cpuid on x86-64. */
+/* Early minimal CPU initialization. */
+void arch_stage_1 (void);
+
+/* Full CPU initialization for running processes
+ * and (in the future) SMP. */
+void arch_stage_2 (void);
+
+/* Identify the running CPU (es: cpuid on x86). */
 void arch_cpu_identify (struct cpu_info *c);
+
+/* Halts the CPU forever */
+void arch_cpu_hcf (void);

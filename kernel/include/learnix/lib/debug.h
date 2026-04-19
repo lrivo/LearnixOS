@@ -1,5 +1,4 @@
 #pragma once
-
 #include <learnix/types.h>
 
 /* Prints at most max_frames stack frames from the current rbp */

@@ -1,9 +1,9 @@
 #pragma once
-#include <learnix/arch/amd64/types.h>
+#include <learnix/arch/types.h>
 
 /* Read MSR (Model Specific Register). */
-inline uint64_t 
-rdmsr(uint32_t msr)
+inline uint64_t
+rdmsr (uint32_t msr)
 {
   uint32_t low, high;
   asm volatile ("rdmsr" : "=a"(low), "=d"(high) : "c"(msr));
@@ -14,5 +14,5 @@ rdmsr(uint32_t msr)
 inline void
 wrmsr (uint32_t msr, uint64_t value)
 {
-  asm volatile ("wrmsr" :: "c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
+  asm volatile ("wrmsr" ::"c"(msr), "a"(value & 0xFFFFFFFF), "d"(value >> 32));
 }

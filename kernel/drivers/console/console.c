@@ -1,6 +1,6 @@
 #include <learnix/drivers/console/console.h>
 #include <learnix/lib/string.h>
-#include <stdint.h>
+#include <learnix/types.h>
 
 /* Linker symbols for the PSF2 font. */
 extern char _binary_default8x16_psfu_start[];

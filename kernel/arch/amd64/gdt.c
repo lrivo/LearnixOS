@@ -1,6 +1,6 @@
 #include "gdt.h"
-#include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/lib/string.h>
 #include <stdint.h>
 
 static struct gdt gdt;
@@ -13,7 +13,7 @@ static char kern_stack[4096];
 static inline void
 gdt_load ()
 {
-  gdtr.size = sizeof(struct gdt) - 1;
+  gdtr.size = sizeof (struct gdt) - 1;
   gdtr.offset = (uintptr_t)&gdt;
   asm volatile ("lgdt (%0)" : : "r"(&gdtr));
   reloadSegments ();
@@ -22,15 +22,15 @@ gdt_load ()
 static inline void
 tss_load ()
 {
-  asm volatile ("ltr %0" :: "r"((uint16_t)0x28));
+  asm volatile ("ltr %0" ::"r"((uint16_t)0x28));
 }
 
 // NOTE: on x86_64 base and limits are meaningless, only access and flags count
 void
 gdt_init ()
-{  
-  memset(kern_stack, 0, 4096);
-  kprintf("gdt_init => kernel stack at %p\n", kern_stack);
+{
+  memset (kern_stack, 0, 4096);
+  kprintf ("gdt_init => kernel stack at %p\n", kern_stack);
 
   // 0x00: Null descriptor
   memset (&gdt, 0, sizeof (struct gdt_entry));
@@ -110,10 +110,10 @@ gdt_init ()
    */
   gdt.udata.access = 0xF2;
   gdt.udata.flags = 0xC0;
-  
+
   // 0x28: TSS
   vaddr_t tss_addr = (vaddr_t)&tss;
-  gdt.tss.limit = (uint16_t)sizeof(struct tss);
+  gdt.tss.limit = (uint16_t)sizeof (struct tss);
   gdt.tss.base_low = tss_addr & 0xFFFF;
   gdt.tss.base_mid = (tss_addr >> 16) & 0xFF;
   gdt.tss.base_high = (tss_addr >> 24) & 0xFF;
@@ -121,9 +121,9 @@ gdt_init ()
   gdt.tss.access = 0x89;
   gdt.tss.flags = 0x40;
 
-  memset(&tss.tss0, 0, sizeof(struct tss_entry));
-  tss.tss0.rsp0 = (vaddr_t)kern_stack + 4096; 
-  tss.tss0.iopb = (uint16_t)sizeof(struct tss_entry);
+  memset (&tss.tss0, 0, sizeof (struct tss_entry));
+  tss.tss0.rsp0 = (vaddr_t)kern_stack + 4096;
+  tss.tss0.iopb = (uint16_t)sizeof (struct tss_entry);
 
   gdt_load ();
   tss_load ();

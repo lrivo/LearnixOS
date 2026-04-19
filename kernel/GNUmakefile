@@ -45,7 +45,9 @@ CFLAGS := -g -O2 -pipe \
 	-fno-omit-frame-pointer
 
 # User controllable C preprocessor flags. We set none by default.
-CPPFLAGS :=
+# FIXME: this includes architecture specific definitions,
+# for now hardcoded to x64_64
+CPPFLAGS := -I arch/amd64/include
 
 # User controllable nasm flags.
 NASMFLAGS := -g

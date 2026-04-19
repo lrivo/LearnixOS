@@ -1,10 +1,9 @@
+#include <learnix/arch/memlayout.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/string.h>
-#include <learnix/mm/memlayout.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/types.h>
 #include <limine.h>
-#include <stddef.h>
-#include <stdint.h>
 
 /* Total amount of physical memory in bytes on this system. */
 static size_t tot_mem_byte = 0;
@@ -18,15 +17,15 @@ static uint16_t *refcount = NULL;
 
 /* Internal conversion helpers. */
 static inline size_t
-pa_to_idx (physaddr_t pa)
+pa_to_idx (paddr_t pa)
 {
   return PGROUNDDOWN (pa) / PGSIZE;
 }
 
-static inline physaddr_t
+static inline paddr_t
 idx_to_pa (size_t idx)
 {
-  return (physaddr_t)idx * PGSIZE;
+  return (paddr_t)idx * PGSIZE;
 }
 
 static inline void
@@ -72,7 +71,7 @@ memmap_find_highest_addr (struct limine_memmap_response *mm)
 }
 
 static inline void
-assert_valid_pa (physaddr_t pa)
+assert_valid_pa (paddr_t pa)
 {
   if (pa_to_idx (pa) > tot_phys_pgs)
   {
@@ -96,8 +95,8 @@ static void
 pmm_test ()
 {
   // #1: should get two contiguous physical pages
-  physaddr_t p1 = pmm_alloc (PMM_NONE);
-  physaddr_t p2 = pmm_alloc (PMM_NONE);
+  paddr_t p1 = pmm_alloc (PMM_NONE);
+  paddr_t p2 = pmm_alloc (PMM_NONE);
   if (p1 + PGSIZE != p2)
   {
     kpanic ("pmm_test #1: not contiguous");
@@ -173,7 +172,7 @@ pmm_init (struct limine_memmap_response *mmap)
   pmm_test ();
 }
 
-physaddr_t
+paddr_t
 pmm_alloc (size_t flags)
 {
   uint64_t *b = (uint64_t *)bitmap;
@@ -208,7 +207,7 @@ pmm_alloc (size_t flags)
       refcount[idx] = 1;
 
       // get his physical address
-      physaddr_t pa = idx_to_pa (idx);
+      paddr_t pa = idx_to_pa (idx);
 
       // apply flags
       if (flags & PMM_ZERO)
@@ -226,7 +225,7 @@ pmm_alloc (size_t flags)
 
 // FIXME: no overflow checks
 void
-pmm_ref_pg (physaddr_t pa)
+pmm_ref_pg (paddr_t pa)
 {
   assert_valid_pa (pa);
 
@@ -234,7 +233,7 @@ pmm_ref_pg (physaddr_t pa)
 }
 
 void
-pmm_unref_pg (physaddr_t pa)
+pmm_unref_pg (paddr_t pa)
 {
   assert_valid_pa (pa);
 

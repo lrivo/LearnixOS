@@ -1,10 +1,10 @@
 /*
  *  This header contains architecture indipendent types.
- *  It first include the target architecture type definitions.
+ *  It first include the target architecture type definitions
+ *  and then use those to define general types.
  */
 
 #pragma once
+#include <learnix/arch/types.h>
 
-#ifdef __x86_64__
-#include <learnix/arch/amd64/types.h>
-#endif
+typedef uint32_t pid_t; // Process IDentifier

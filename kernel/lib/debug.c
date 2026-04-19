@@ -1,8 +1,7 @@
+#include <learnix/arch/memlayout.h>
 #include <learnix/lib/debug.h>
 #include <learnix/lib/kprintf.h>
-#include <learnix/mm/memlayout.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <learnix/types.h>
 
 struct stackframe
 {

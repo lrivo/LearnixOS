@@ -1,6 +1,6 @@
 #include "paging.h"
-#include <learnix/lib/kprintf.h>
-#include <learnix/mm/memlayout.h>
+#include <learnix/arch/memlayout.h>
+#include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
 
 /*
@@ -16,10 +16,68 @@
  * kmall() btw.
  */
 
-int
-vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags)
+static int
+pml_unused (vaddr_t pml)
 {
-  pml4_t *pml4 = (pml4_t*)pgtable;
+  uintptr_t *p = (uintptr_t *)PGROUNDDOWN (pml);
+  for (int i = 0; i < 512; i++)
+    if (p[i] & PTE_PRESENT)
+      return 0;
+  return 1;
+}
+
+static pte_t *
+pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
+           pml2_t **pml2out)
+{
+  // HHDM pointer to the current level's page table
+  uintptr_t *p = (uintptr_t *)pml4;
+
+  // walk from pml4 to pml1 (pte)
+  for (int i = 0, shift = 39; i < 3; i++, shift -= 9)
+  {
+    // extract the 0-511 index of the current level
+    int idx = (va >> shift) & 0x1FF;
+
+    // return the middle levels if requested
+    if (pml3out && i == 1)
+      *pml3out = (pml3_t *)&p[idx];
+    if (pml2out && i == 2)
+      *pml2out = (pml2_t *)&p[idx];
+
+    // checks if the current level is not mapped
+    if (!(p[idx] & PTE_PRESENT))
+    {
+      // if the caller requested we allocate this level by
+      // requesting a zeroed physical frame to the PMM
+      if (flags)
+      {
+        paddr_t pf = pmm_alloc (PMM_ZERO);
+        p[idx] = pf | PTE_WRITE | PTE_PRESENT;
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+
+    // stop early if pml3 (1 GB)  or pml2 (2 MB) are huge pages
+    // NOTE: using 5 level paging you also need to check for pml4
+    if (i > 0 && p[idx] & PTE_HUGE)
+      return (pte_t *)&p[idx];
+
+    // make p point to the HHDM address of the next level
+    p = (uintptr_t *)PA_TO_HHDM (p[idx] & PTE_PA_MASK);
+  }
+
+  // if we exit the loop the pte exists, return his HHDM virtual address
+  return (pte_t *)&p[(va >> 12) & 0x1FF];
+}
+
+int
+vmm_map (void *pgtable, vaddr_t va, paddr_t pa, int flags)
+{
+  pml4_t *pml4 = (pml4_t *)pgtable;
   pml3_t *pml3;
   pml2_t *pml2;
 
@@ -30,17 +88,17 @@ vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags)
   {
     uint64_t pte_flags = PTE_PRESENT | PTE_WRITE;
     // make sure all levels are mapped as user
-    if (flags & VMM_FLAG_USER) 
+    if (flags & VMM_FLAG_USER)
     {
-      pml4[PML4_IDX(va)] |= PTE_USER;
+      pml4[PML4_IDX (va)] |= PTE_USER;
       *pml3 |= PTE_USER;
       *pml2 |= PTE_USER;
-      pte_flags |= PTE_USER; 
+      pte_flags |= PTE_USER;
     }
     // map only the PTE as cache-disabled
     if (flags & VMM_FLAG_NOCACHE)
     {
-      pte_flags |= PTE_PWT | PTE_PCD; 
+      pte_flags |= PTE_PWT | PTE_PCD;
     }
     *pte = PGROUNDDOWN (pa) | pte_flags;
     vmm_flush_single (va);
@@ -79,7 +137,7 @@ vmm_unmap (void *pgtable, vaddr_t va)
   if (pml2 && pml_unused ((vaddr_t)pte))
   {
     // the physical address of pte is found in the pml2 entry
-    physaddr_t pa = *pml2 & PTE_PA_MASK;
+    paddr_t pa = *pml2 & PTE_PA_MASK;
     *pml2 = 0;
     pmm_unref_pg (pa);
   }
@@ -89,7 +147,7 @@ vmm_unmap (void *pgtable, vaddr_t va)
   if (pml3 && pml_unused ((vaddr_t)pml2))
   {
     // the physical address of pml2 is found in the pml3 entry
-    physaddr_t pa = *pml3 & PTE_PA_MASK;
+    paddr_t pa = *pml3 & PTE_PA_MASK;
     *pml3 = 0;
     pmm_unref_pg (pa);
   }
@@ -99,7 +157,7 @@ vmm_unmap (void *pgtable, vaddr_t va)
   if (pml3 && pml_unused ((vaddr_t)pml3))
   {
     // the physical address of pml3 is found in the pml4 entry
-    physaddr_t pa = pml4[PML4_IDX (va)] & PTE_PA_MASK;
+    paddr_t pa = pml4[PML4_IDX (va)] & PTE_PA_MASK;
     pml4[PML4_IDX (va)] = 0;
     pmm_unref_pg (pa);
   }
@@ -107,7 +165,7 @@ vmm_unmap (void *pgtable, vaddr_t va)
   return 1;
 }
 
-physaddr_t
+paddr_t
 vmm_va_to_pa (void *pgtable, vaddr_t va)
 {
   // walk the page table without allocating not present intermediate levels
@@ -135,5 +193,5 @@ vmm_flush_all (void)
 {
   uint64_t cr3old;
   asm volatile ("mov %%cr3,%0" : "=r"(cr3old));
-  asm volatile ("mov %0,%%cr3" :: "r"(cr3old));
+  asm volatile ("mov %0,%%cr3" ::"r"(cr3old));
 }

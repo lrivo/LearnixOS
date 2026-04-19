@@ -1,10 +1,9 @@
-#include <learnix/arch/arch.h>
-#include <learnix/arch/interrupts.h>
+#include <learnix/cpu.h>
 #include <learnix/drivers/console/console.h>
+#include <learnix/interrupts.h>
 #include <learnix/lib/debug.h>
-#include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
-#include <stdarg.h>
+#include <learnix/types.h>
 
 void
 kpanic (const char *fmt, ...)
@@ -27,5 +26,5 @@ kpanic (const char *fmt, ...)
   dbg_print_stack_trace (10);
 
   // halt the CPU
-  arch_hcf ();
+  arch_cpu_hcf ();
 }

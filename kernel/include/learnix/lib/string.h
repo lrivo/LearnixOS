@@ -1,5 +1,5 @@
 #pragma once
-#include <stddef.h>
+#include <learnix/types.h>
 
 /* Architecture-specific implementations under kernel/arch */
 void *memcpy (void *restrict dest, const void *restrict src, size_t n);

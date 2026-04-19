@@ -12,7 +12,6 @@
  * located in the corresponding arch/ directory.
  */
 #pragma once
-#include <learnix/mm/pmm.h>
 #include <learnix/types.h>
 
 typedef uintptr_t vaddr_t; // virtual address
@@ -24,13 +23,13 @@ typedef uintptr_t vaddr_t; // virtual address
 #define VMM_FLAG_USER (1 << 2)    // usermode page
 #define VMM_FLAG_NOCACHE (1 << 3) // this page cannot be cached, useful for MMIO
 #define VMM_FLAG_GLOBAL (1 << 4)  // cannot be flushed from the TLB
-int vmm_map (void *pgtable, vaddr_t va, physaddr_t pa, int flags);
+int vmm_map (void *pgtable, vaddr_t va, paddr_t pa, int flags);
 
 /* Unmaps the virtual address va from the page table rooted at pgtable. */
 int vmm_unmap (void *pgtable, vaddr_t va);
 
 /* Returns the physical address of va in the page table rooted at pgtable. */
-physaddr_t vmm_va_to_pa (void *pgtable, vaddr_t va);
+paddr_t vmm_va_to_pa (void *pgtable, vaddr_t va);
 
 /* Returns the HHDM address of the current page table root. */
 vaddr_t vmm_get_pgtable ();

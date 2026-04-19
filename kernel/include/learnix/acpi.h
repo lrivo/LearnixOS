@@ -1,7 +1,5 @@
 #pragma once
-#include "learnix/arch/amd64/types.h"
 #include <learnix/types.h>
-#include <stdint.h>
 
 /* The output of apic_init(), it contains the most important
  * information found during ACPI parsing that the rest of
@@ -15,8 +13,8 @@ struct acpi_intr_override
 
 struct acpi_summary
 {
-  bool ps2_exists;        // does the PS/2 controller exists?
-  physaddr_t ioapic_addr; // MMIO physical address of the I/O APIC
+  bool ps2_exists;     // does the PS/2 controller exists?
+  paddr_t ioapic_addr; // MMIO physical address of the I/O APIC
 
   struct acpi_intr_override overrides[16];
   int overrides_len;
@@ -67,7 +65,7 @@ struct xsdt
 } __attribute__ ((packed));
 
 //===========
-// FADT (Fixed ACPI Description Table) 
+// FADT (Fixed ACPI Description Table)
 // https://uefi.org/sites/default/files/resources/ACPI_Spec_6_5_Aug29.pdf
 //===========
 struct fadt
@@ -75,14 +73,14 @@ struct fadt
   struct xsdt_hdr hdr;
   uint32_t firmware_ctrl;
   uint32_t dsdt;
-  uint8_t  reserved;
-  uint8_t  preferred_pm_profile;
+  uint8_t reserved;
+  uint8_t preferred_pm_profile;
   uint16_t sci_int;
   uint32_t smi_cmd;
-  uint8_t  acpi_enable;
-  uint8_t  acpi_disable;
-  uint8_t  s4bios_req;
-  uint8_t  pstate_cnt;
+  uint8_t acpi_enable;
+  uint8_t acpi_disable;
+  uint8_t s4bios_req;
+  uint8_t pstate_cnt;
   uint32_t pm1a_evt_blk;
   uint32_t pm1b_evt_blk;
   uint32_t pm1a_cnt_blk;
@@ -91,24 +89,24 @@ struct fadt
   uint32_t pm_tmr_blk;
   uint32_t gpe0_blk;
   uint32_t gpe1_blk;
-  uint8_t  pm1_evt_len;
-  uint8_t  pm1_cnt_len;
-  uint8_t  pm2_cnt_len;
-  uint8_t  pm_tmr_len;
-  uint8_t  gpe0_blk_len;
-  uint8_t  gpe1_blk_len;
-  uint8_t  gpe1_base;
-  uint8_t  cst_cnt;
+  uint8_t pm1_evt_len;
+  uint8_t pm1_cnt_len;
+  uint8_t pm2_cnt_len;
+  uint8_t pm_tmr_len;
+  uint8_t gpe0_blk_len;
+  uint8_t gpe1_blk_len;
+  uint8_t gpe1_base;
+  uint8_t cst_cnt;
   uint16_t p_lv2_lat;
   uint16_t p_lvl3_lat;
   uint16_t flush_size;
   uint16_t flush_stride;
-  uint8_t  duty_offset;
-  uint8_t  duty_width;
-  uint8_t  day_alarm;
-  uint8_t  mon_alarm;
-  uint8_t  century;
-  uint16_t iapc_boot_arch;    // bit 1 set = PS/2 controller exists
+  uint8_t duty_offset;
+  uint8_t duty_width;
+  uint8_t day_alarm;
+  uint8_t mon_alarm;
+  uint8_t century;
+  uint16_t iapc_boot_arch; // bit 1 set = PS/2 controller exists
   // TODO: FADT has many more field that I currently don't care about
 } __attribute__ ((packed));
 
@@ -173,4 +171,4 @@ void acpi_init ();
 bool acpi_get_ps2 (void);
 
 /* Returns the I/O APIC physical address found in MADT. */
-physaddr_t acpi_get_ioapic ();
+paddr_t acpi_get_ioapic ();

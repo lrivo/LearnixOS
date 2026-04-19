@@ -1,11 +1,10 @@
-#include "learnix/acpi.h"
-#include <learnix/arch/interrupts.h>
-#include <learnix/arch/io.h>
+#include <learnix/acpi.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
+#include <learnix/interrupts.h>
+#include <learnix/io.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
-#include <stdint.h>
 
 static int break_code = 0;
 
@@ -106,9 +105,9 @@ void
 ps2kb_init ()
 {
   // return early if the motherboard does not support PS/2
-  if (!acpi_get_ps2())
+  if (!acpi_get_ps2 ())
   {
-    kprintf("[ DBG ] ps2kb_init: PS/2 controller not supported");
+    kprintf ("[ DBG ] ps2kb_init: PS/2 controller not supported");
     return;
   }
 

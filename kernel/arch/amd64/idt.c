@@ -1,5 +1,5 @@
 #include "idt.h"
-#include <learnix/arch/arch.h>
+#include <learnix/interrupts.h>
 #include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
@@ -44,53 +44,13 @@ idt_set_gate (size_t idx, uintptr_t handler, uint16_t selector, uint8_t ist,
 }
 
 static void
-handler_div_zero (struct intr_stack_frame_t *f)
-{
-  kpanic ("Division by zero at %p\n", f->rip);
-}
-
-static void
-handler_invalid_opcode (struct intr_stack_frame_t *f)
-{
-  kpanic ("Invalid opcode at %p\n", f->rip);
-}
-
-static void
-handler_page_fault (struct intr_stack_frame_t *f)
-{
-  uint64_t faultaddr;
-  asm volatile ("mov %%cr2,%0" : "=r"(faultaddr));
-  kpanic ("[ Page Fault ]\ncode: %lu\nfault address: %p\n rip: %p\n rsp: %p\n",
-          f->error, faultaddr, f->rip, f->rsp);
-}
-
-static void
-handler_gpf (struct intr_stack_frame_t *f)
-{
-  kpanic ("General protection fault at %p wit error %lu\n", f->rip, f->error);
-}
-
-static void
-handler_double_fault (struct intr_stack_frame_t *f)
-{
-  kpanic ("Double fault at %p\n", f->rip);
-}
-
-static void
-handler_invalid_tss (struct intr_stack_frame_t *f)
-{
-  kpanic ("Invalid TSS: %lu", f->error);
-}
-
-static void
-handler_timer (struct intr_stack_frame_t *f)
+handler_timer (struct intr_trap_frame *tf)
 {
   arch_interrupts_eoi (0);
 }
 
 void
-arch_interrupts_register (size_t vector, intr_handler_t handler,
-                          intr_flags_t flags)
+arch_interrupts_register (size_t vector, void *handler, intr_flags_t flags)
 {
   // 0. Input checks
   if (vector > IDT_ENTRIES)
@@ -105,12 +65,12 @@ arch_interrupts_register (size_t vector, intr_handler_t handler,
 }
 
 void
-intr_dispatcher (struct intr_stack_frame_t *frame)
+intr_dispatcher (struct intr_trap_frame *tf)
 {
-  int vector_num = (int)frame->vector_num;
+  int vector_num = (int)tf->vector_num;
 
   if (handlers[vector_num])
-    handlers[vector_num](frame);
+    handlers[vector_num](tf);
   else
     kpanic ("intr_dispatcher: %d is not registered", vector_num);
 }
@@ -125,12 +85,6 @@ idt_init ()
   }
 
   // load the actual handlers
-  arch_interrupts_register (0, handler_div_zero, INTR_FLAG_DEFAULT);
-  arch_interrupts_register (6, handler_invalid_opcode, INTR_FLAG_DEFAULT);
-  arch_interrupts_register (8, handler_double_fault, INTR_FLAG_DEFAULT);
-  arch_interrupts_register (10, handler_invalid_tss, INTR_FLAG_DEFAULT);
-  arch_interrupts_register (13, handler_gpf, INTR_FLAG_DEFAULT);
-  arch_interrupts_register (14, handler_page_fault, INTR_FLAG_DEFAULT);
   arch_interrupts_register (0x20, handler_timer, INTR_FLAG_DEFAULT);
 
   idt_load ();
