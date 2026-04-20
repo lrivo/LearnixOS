@@ -35,8 +35,12 @@ struct process
 
   /* scheduling information */
   int priority;
+  int need_resched;
   struct process *next;
 };
+
+/* Initializes the idle kernel process (the first one) */
+void proc_init (void);
 
 /* Initializes a new empty process with minimal state (es: kernel's pgtable
  * copy). */
@@ -44,6 +48,8 @@ struct process *proc_create (void);
 
 /* Destroys (if possible) the given process */
 void proc_destroy (struct process *p);
+
+struct process *proc_by_pid(pid_t pid);
 
 // ===== UNIX ====== //
 pid_t proc_fork (struct process *p);

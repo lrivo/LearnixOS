@@ -62,6 +62,9 @@ __attribute__ ((used,
 vaddr_t hhdm_offset, kernel_virt_base;
 paddr_t kernel_phys_base;
 
+/* This function initializes the kernel IDLE process
+   that just spins in kernel mode */
+
 // Tell kprintf() to use the framebuffer console to print stuff.
 void
 _putchar (char character)
@@ -123,13 +126,15 @@ kmain (void)
 
   // Initialize the PS/2 keyboard.
   ps2kb_init ();
+  
+  // Initialize the kernel idle process
+  proc_init();
 
   // TEST: start a dummy process
   vaddr_t ucode = 0x400000UL;        // 4MB
   vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
   struct process *p = proc_create ();
-  kprintf ("Process's kernel stack at %p\n", p->kstack);
-
+  
   extern void test_ucode (void);
   paddr_t ucode_pf = pmm_alloc (PMM_NONE);
   memcpy ((void *)P2V (ucode_pf), (void *)test_ucode, 32);
@@ -141,12 +146,10 @@ kmain (void)
 
   // initialize the process's trap frame
   arch_proc_init (p, ucode, ustack + PGSIZE);
-
-  // TEST: should jump in usermode
-  vmm_swap_pgtable (p->pgtable);
-  arch_context_switch (NULL, p); // only updates TSS for now
-  arch_test_jump_usermode (p->tf);
-
+  
+  // does the first context switch (kernel idle -> p)
+  arch_context_switch (proc_by_pid(0), p);
+ 
   // At this point the kernel is fully initialized
   arch_cpu_hcf ();
 }

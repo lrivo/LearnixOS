@@ -6,7 +6,30 @@
 #include <learnix/process.h>
 
 // pid 0 is the fallback process (that is run when no other process exist)
+static void *kern_pgtable;
+static struct process procs[32] = { 0 };
 static pid_t pid_cnt = 1;
+
+void
+proc_init (void)
+{
+  // save kernel's page table  
+  kern_pgtable = (void*)vmm_get_pgtable();
+  
+  /* This idle process will just keep spinning in kernel mode,
+     and it will be run if no other runnable process exists */
+  struct process *idle = kzalloc (sizeof (struct process));
+  idle->pid = 0;
+  idle->state = RUNNING;
+  idle->pgtable = kern_pgtable; 
+  idle->kstack = (void*)P2V (pmm_alloc(PMM_NONE));
+}
+
+struct process *
+proc_by_pid (pid_t pid)
+{
+  return pid < 32 ? &procs[pid] : NULL;
+}
 
 struct process *
 proc_create (void)
@@ -29,7 +52,7 @@ proc_create (void)
    * mapping (x86_64) processes created before it
    * won't see it. */
   p->pgtable = (void *)P2V (pmm_alloc (PMM_NONE));
-  memcpy (p->pgtable, (void *)vmm_get_pgtable (), PGSIZE);
+  memcpy (p->pgtable, kern_pgtable, PGSIZE);
 
   return p;
 }

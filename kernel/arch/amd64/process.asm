@@ -2,15 +2,47 @@ BITS 64
 
 global test_ucode
 test_ucode:
+  mov rax, 1
+  mov r15, 15
 .loop: 
-  inc rax
   jmp .loop
 
+; rdi = struct arch_proc_context *prev 
+; rsi = struct arch_proc_context *next
+global _switch_to
+_switch_to:
+  ; save registers on prev kernel stack
+  push rbx
+  push rbp
+  push r12
+  push r13
+  push r14
+  push r15
+  
+  ; save current stack pointer 
+  ; prev->ctx.rsp = prev's rsp 
+  mov [rdi], rsp
+  
+  ; load next's stack pointer 
+  ; rsp = next->ctx.rsp 
+  mov rsp, [rsi]
+  
+  ; now we are on next's kernel stack
+  pop r15 
+  pop r14
+  pop r13
+  pop r12
+  pop rbp
+  pop rbx
+  
+  ; back to arch_context_switch
+  ret
+  
 ; rdi = struct trapframe *tf
-global arch_test_jump_usermode
-arch_test_jump_usermode:
-  mov rsp, rdi
-
+global jump_usr_first_time
+jump_usr_first_time:
+  ; pop the initial GPR values that arch_proc_init()
+  ; has placed on the kernel stack
   pop r15
   pop r14
   pop r13
@@ -26,8 +58,6 @@ arch_test_jump_usermode:
   pop rcx 
   pop rbx
   pop rax
-
+ 
   add rsp, 16   ; skip error and vector_num
-  
-  sti
-  iretq
+  iretq         ; jump in userspace with interrupts enabled

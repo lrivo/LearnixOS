@@ -4,5 +4,5 @@
 /* This is what switch_to() uses to context-switch */
 struct arch_proc_context
 {
-  uint64_t kern_rsp;
+  uint64_t rsp;
 };
