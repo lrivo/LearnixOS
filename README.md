@@ -2,6 +2,8 @@
 
 This is my Bachelor's thesis project: designing and developing a modular x86_64 kernel.
 
+Please read the documentation [here](docs/README.md).
+
 ## Build
 Just run the following command:
 

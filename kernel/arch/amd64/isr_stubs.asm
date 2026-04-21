@@ -72,8 +72,9 @@ isr_stub_%+%1:
   mov rdi, rsp
 
   ; call C dispatcher
-  cld
   call intr_dispatcher
+  
+  ; TODO: PROC_NEED_RESCHED
 
   ; restore registers
   pop_regs
@@ -97,7 +98,6 @@ isr_stub_%+%1:
   mov rdi, rsp
 
   ; call C dispatcher
-  cld
   call intr_dispatcher
 
   ; restore registers

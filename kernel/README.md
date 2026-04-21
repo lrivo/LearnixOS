@@ -6,6 +6,8 @@
 - `include/`: generic header files
 - `lib/`: libc-like utility functions (`memcpy()`, `strlen()`)
 - `mm/`: architecture independent memory management
+- `proc/`: everything about processes
+- `sched/`: schedulers
 
 ### Notes
 Currently the PS/2 keyboard driver (`drivers/input/ps2kb.c`) is an architecture specific driver in a non architecture specific ffolder.

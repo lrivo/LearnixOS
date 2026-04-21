@@ -1,3 +1,4 @@
+#include "learnix/scheduler.h"
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
@@ -129,6 +130,9 @@ kmain (void)
   
   // Initialize the kernel idle process
   proc_init();
+
+  // Initialize the scheduler
+  sched_init();
 
   // TEST: start a dummy process
   vaddr_t ucode = 0x400000UL;        // 4MB

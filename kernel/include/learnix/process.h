@@ -35,8 +35,10 @@ struct process
 
   /* scheduling information */
   int priority;
-  int need_resched;
-  struct process *next;
+  #define PROC_NEED_RESCHED (1 << 0UL)
+  int flags;
+
+  void *sched_data;
 };
 
 /* Initializes the idle kernel process (the first one) */
