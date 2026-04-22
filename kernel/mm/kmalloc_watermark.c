@@ -10,6 +10,7 @@ static void *watermark, *end;
 static inline void
 kmalloc_grow ()
 {
+  // FIXME: kernel page table
   vmm_map ((void *)vmm_get_pgtable (), (vaddr_t)end, pmm_alloc (0), 1);
   end += 4096;
 }
@@ -42,5 +43,6 @@ kzalloc (size_t size)
 void
 kfree (void *ptr)
 {
-  kpanic ("kfree_watermark: NOT IMPLEMENTED");
+  // do nothing
+  return;
 }

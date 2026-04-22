@@ -1,13 +1,12 @@
+#include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/scheduler.h>
-
-// FIXME: move this to a per-CPU struct
-static struct process *curr;
 
 void
 schedule ()
 {
   // try to find the next process to run
+  struct process *curr = arch_cpu_get ()->proc;
   struct process *next = sched_pick_next (curr);
   if (next == NULL || curr == next)
     return; // nothing to schedule
@@ -15,8 +14,7 @@ schedule ()
   // update processes state
   curr->state = READY;
   next->state = RUNNING;
-
-  curr = next;
+  arch_cpu_get ()->proc = next;
 
   // TEST:
   kprintf ("Context switch from %u => %u\n", curr->pid, next->pid);

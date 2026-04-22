@@ -4,6 +4,9 @@
  * The runqueue is a circular doubly-linked list so that
  * insertion and deletion are both O(1).
  */
+#include "learnix/cpu.h"
+#include "learnix/lib/kprintf.h"
+#include "learnix/process.h"
 #include <learnix/lib/kpanic.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
@@ -32,21 +35,25 @@ sched_init ()
 
   // insert the user init process
   sched_insert_proc (proc_by_pid (1));
+
+  // force the initial CPU state
+  // to fake that PID 0 was running
+  arch_cpu_get ()->proc_need_resched = true;
+  arch_cpu_get ()->proc = sentinel;
 }
 
 /* Pick the next runnable process */
 struct process *
 sched_pick_next (struct process *curr)
 {
-  struct rr_node *rr = (struct rr_node *)curr->sched_data;
-  return rr->next;
-  /* try not to pick the sentinel, note that
-     next->next is the sentinel if the runqueue
-     is empty
-  return rr->next != sentinel
-    ? rr->next
-    : ((struct rr_node*)rr->next)->next;
-  */
+  return ((struct rr_node *)curr->sched_data)->next;
+}
+
+void
+sched_tick (void)
+{
+  kprintf ("sched_tick: PID %u is running\n", arch_cpu_get ()->proc->pid);
+  arch_cpu_get ()->proc_need_resched = true;
 }
 
 /* Linked-List tail insertion */
@@ -61,7 +68,7 @@ sched_insert_proc (struct process *p)
 
   new->next = sentinel;
   new->prev = sent->prev; // current tail
-  ((struct rr_node *)new->prev)->next = p;
+  ((struct rr_node *)new->prev->sched_data)->next = p;
   sent->prev = p;
 
   p->sched_data = (void *)new;
@@ -76,8 +83,8 @@ sched_remove_proc (struct process *p)
 
   struct rr_node *curr = (struct rr_node *)p->sched_data;
 
-  ((struct rr_node *)curr->prev)->next = curr->next;
-  ((struct rr_node *)curr->next)->prev = curr->prev;
+  ((struct rr_node *)curr->prev->sched_data)->next = curr->next;
+  ((struct rr_node *)curr->next->sched_data)->prev = curr->prev;
 
   kfree (curr);
   p->sched_data = NULL;

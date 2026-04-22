@@ -35,9 +35,6 @@ struct process
 
   /* scheduling information */
   int priority;
-  #define PROC_NEED_RESCHED (1 << 0UL)
-  int flags;
-
   void *sched_data;
 };
 
@@ -51,7 +48,7 @@ struct process *proc_create (void);
 /* Destroys (if possible) the given process */
 void proc_destroy (struct process *p);
 
-struct process *proc_by_pid(pid_t pid);
+struct process *proc_by_pid (pid_t pid);
 
 // ===== UNIX ====== //
 pid_t proc_fork (struct process *p);

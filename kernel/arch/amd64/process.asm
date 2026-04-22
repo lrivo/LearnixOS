@@ -60,4 +60,5 @@ jump_usr_first_time:
   pop rax
  
   add rsp, 16   ; skip error and vector_num
+  swapgs
   iretq         ; jump in userspace with interrupts enabled

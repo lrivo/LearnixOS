@@ -1,3 +1,4 @@
+#include "amd64.h"
 #include "gdt.h"
 #include "idt.h"
 #include "ioapic.h"
@@ -5,6 +6,8 @@
 #include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
+#include <learnix/mm/kmalloc.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 static inline void
@@ -29,6 +32,21 @@ arch_stage_2 ()
 {
   lapic_init ();
   ioapic_init ();
+
+  // setup per-core struct
+  struct cpu *cpu = (struct cpu *)kzalloc (sizeof (struct cpu));
+  cpu->self = cpu;
+  cpu->proc_need_resched = true;
+  wrmsr (0xC0000101, (uint64_t)cpu);
+  wrmsr (0xC0000102, (uint64_t)cpu);
+}
+
+struct cpu *
+arch_cpu_get (void)
+{
+  struct cpu *p;
+  asm volatile ("mov %%gs:0, %0" : "=r"(p));
+  return p;
 }
 
 void

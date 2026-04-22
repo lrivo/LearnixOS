@@ -16,6 +16,7 @@
  * the rest of the kernel arch indipendent code will mostly use
  * kmall() btw.
  */
+static pml4_t kern_pgtable;
 
 static int
 pml_unused (vaddr_t pml)
@@ -73,6 +74,12 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
 
   // if we exit the loop the pte exists, return his HHDM virtual address
   return (pte_t *)&p[(va >> 12) & 0x1FF];
+}
+
+void
+vmm_init (void)
+{
+  kern_pgtable = (pml4_t)vmm_get_pgtable ();
 }
 
 int
@@ -173,6 +180,12 @@ vmm_va_to_pa (void *pgtable, vaddr_t va)
   pte_t *pte = pgdirwalk ((pml4_t *)pgtable, va, 0, NULL, NULL);
 
   return pte ? (*pte & PTE_PA_MASK) + (va & 0xFFF) : 0;
+}
+
+inline vaddr_t
+vmm_get_kern_pgtable (void)
+{
+  return (vaddr_t)kern_pgtable;
 }
 
 inline vaddr_t

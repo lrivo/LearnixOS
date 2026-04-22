@@ -1,5 +1,17 @@
 #pragma once
+#include <learnix/process.h>
 #include <learnix/types.h>
+
+/* This contains CPU core-specific information, like
+ * the currently running process and any architecture
+ * can define additional stuff in arch_cpu */
+struct cpu
+{
+  struct cpu *self;
+  bool proc_need_resched;
+  uint32_t id;
+  struct process *proc;
+};
 
 struct cpu_info
 {
@@ -7,7 +19,7 @@ struct cpu_info
   void *arch_data;
 
   /* human readable full name */
-  char vendor1[16];
+  char vendor[16];
   char name[64];
 
   /* address space */
@@ -26,6 +38,8 @@ void arch_stage_1 (void);
 /* Full CPU initialization for running processes
  * and (in the future) SMP. */
 void arch_stage_2 (void);
+
+struct cpu *arch_cpu_get (void);
 
 /* Identify the running CPU (es: cpuid on x86). */
 void arch_cpu_identify (struct cpu_info *c);

@@ -16,6 +16,8 @@
 
 typedef uintptr_t vaddr_t; // virtual address
 
+void vmm_init (void);
+
 /* Maps the virtual address va to the physical address pa in the
  * page table rooted at pgtable. */
 #define VMM_FLAG_WRITE (1 << 0)   // map the page as writable
@@ -30,6 +32,9 @@ int vmm_unmap (void *pgtable, vaddr_t va);
 
 /* Returns the physical address of va in the page table rooted at pgtable. */
 paddr_t vmm_va_to_pa (void *pgtable, vaddr_t va);
+
+/* Returns the HHDM address of the kernel's page table root */
+vaddr_t vmm_get_kern_pgtable ();
 
 /* Returns the HHDM address of the current page table root. */
 vaddr_t vmm_get_pgtable ();

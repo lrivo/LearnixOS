@@ -1,5 +1,4 @@
 BITS 64
-
 section .text
 
 ; ==== GDT ====
@@ -57,60 +56,56 @@ reloadSegments:
   pop rax
 %endmacro
 
+; when handling an ISR only the first part of the stub depends
+; on the vector number, but after we've called intr_dispatcher()
+; it's the same
+%macro isr_common 0
+  ; were we in unserspace?
+  cmp qword [rsp+24], 0x08
+  je %%from_kern
+  swapgs                  ; YES, then load kernel' GS
+
+%%from_kern               ; jump here if the IRQ was generated in ring 0
+  push_regs               ; save general purpose registers
+  
+  mov rdi, rsp            ; pass the current stack frame to intr_dispatcher
+  call intr_dispatcher    ; let C code handle the interrupt
+
+  ; NOTE: at this point rsp points at r15, the last pushed register
+  
+  ; can we schedule?
+  cmp byte [gs:8], 0      ; is cpu->proc_need_resched == 0?
+  jz %%no_resched         ; YES, immediately return from the interrupt
+
+  mov byte [gs:8], 0      ; NO, clear it 
+  call schedule           ; and then invoke the scheduler
+
+%%no_resched:             ; jump here if, after intr_dispatcher, we don't need to schedule the process
+  pop_regs                ; restore general purpose registers
+  add rsp, 16             ; skip error code and vector number
+  test [rsp+8], 3         ; CS & 3 (to check if we are returning to userspace) 
+  jz %%ret_kern           ; if not set we are returning from a kernel interrupt (can't happen now)
+  swapgs                  ; restore userspace GS
+
+%%ret_kern:               ; jump here if returning from an interrupt in kernel space
+  iretq                   ; return from interrupt
+%endmacro
+
 %macro isr_noerr 1 
 isr_stub_%+%1:
-  ; dummy error code
-  push 0
-
-  ; vector number
-  push %1
-  
-  ; save registers
-  push_regs
-  
-  ; pass the current stack frame to intr_dispatcher
-  mov rdi, rsp
-
-  ; call C dispatcher
-  call intr_dispatcher
-  
-  ; TODO: PROC_NEED_RESCHED
-
-  ; restore registers
-  pop_regs
-  
-  ; removes vector number and dummy error code
-  add rsp, 16
-
-  ; return from interrupt
-  iretq
+  push qword 0      ; dummy error code
+  push qword %1     ; vector number
+  isr_common
 %endmacro
 
 %macro isr_err 1 
 isr_stub_%+%1:
-  ; vector number
-  push %1
-
-  ; save registers
-  push_regs
-  
-  ; pass the current stack frame to intr_dispatcher
-  mov rdi, rsp
-
-  ; call C dispatcher
-  call intr_dispatcher
-
-  ; restore registers
-  pop_regs
-
-  ; removes vector number and error code
-  add rsp, 16
-
-  ; return from interrupt
-  iretq
+  push qword %1     ; vector number
+  isr_common
 %endmacro
 
 extern intr_dispatcher
+extern schedule
 isr_noerr 0       ; Division by Zero
 isr_noerr 1       ; Debug Exception
 isr_noerr 2       ; NMI Interrupt (Non Maskable)
@@ -143,8 +138,8 @@ isr_noerr 28
 isr_noerr 29
 isr_noerr 30
 isr_noerr 31
-isr_noerr 32	  ; ISR0: hw timer
-isr_noerr 33	  ; ISR1: PS/2 keyboard
+isr_noerr 32    ; ISR0: hw timer
+isr_noerr 33    ; ISR1: PS/2 keyboard
 
 ; stub table
 section .rodata

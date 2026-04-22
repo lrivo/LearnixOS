@@ -37,11 +37,12 @@ lapic_init ()
   vmm_map ((void *)vmm_get_pgtable (), LAPIC_VIRT_BASE, get_lapic_base_phys (),
            VMM_FLAG_NOCACHE);
 
-  // TEST: is x2APIC on?
+  /* is x2APIC on?
   uint32_t apic_msr_limine = rdmsr (APIC_BASE_MSR);
   kprintf ("APIC_BASE_MSR = 0x%lx\n", apic_msr_limine);
   if (apic_msr_limine & (1 << 10))
     kprintf ("x2APIC enabled\n");
+  */
 
   // Enable the LAPIC by setting APIC_BASE_MSR 11th bit
   wrmsr (APIC_BASE_MSR, rdmsr (APIC_BASE_MSR) | (1 << 11));
@@ -53,7 +54,7 @@ lapic_init ()
   lapic_write_reg (LAPIC_TIMER_LVT, 0x10000);
 
   lapic_write_reg (LAPIC_TIMER_DCR, 0x3);
-  lapic_write_reg (LAPIC_TIMER_ICR, 0xFFFFF);
+  lapic_write_reg (LAPIC_TIMER_ICR, 0xFFFFFFFF);
 
   // Enable the LAPIC timer in periodic mode on vector 32
   lapic_write_reg (LAPIC_TIMER_LVT, 0x20 | 0x20000);

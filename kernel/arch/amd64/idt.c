@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "learnix/arch/interrupts.h"
 #include "learnix/arch/types.h"
+#include "learnix/scheduler.h"
 #include <learnix/interrupts.h>
 #include <learnix/lib/debug.h>
 #include <learnix/lib/kpanic.h>
@@ -47,6 +48,7 @@ idt_set_gate (size_t idx, uintptr_t handler, uint16_t selector, uint8_t ist,
 static void
 handler_timer (struct intr_trap_frame *tf)
 {
+  sched_tick ();
   arch_interrupts_eoi (0);
 }
 
