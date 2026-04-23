@@ -63,10 +63,6 @@ __attribute__ ((used,
 vaddr_t hhdm_offset, kernel_virt_base;
 paddr_t kernel_phys_base;
 
-/* This function initializes the kernel IDLE process
-   that just spins in kernel mode */
-
-// Tell kprintf() to use the framebuffer console to print stuff.
 void
 _putchar (char character)
 {
@@ -138,9 +134,9 @@ kmain (void)
   vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
   struct process *p = proc_create ();
 
-  extern void test_ucode (void);
+  extern void test_ucode_sys (void);
   paddr_t ucode_pf = pmm_alloc (PMM_NONE);
-  memcpy ((void *)P2V (ucode_pf), (void *)test_ucode, 32);
+  memcpy ((void *)P2V (ucode_pf), (void *)test_ucode_sys, 64);
 
   // map userspace code and stack in p->pgtable
   vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
@@ -152,7 +148,7 @@ kmain (void)
 
   sched_init ();
 
-  for (int i = 0; i < 0; i++)
+  for (int i = 0; i < 9; i++)
   {
     p = proc_create ();
 

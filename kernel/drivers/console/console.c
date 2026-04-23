@@ -40,7 +40,7 @@ console_scroll ()
 {
   ctx.cursor_x = 0;
   ctx.cursor_y = 0;
-  memset (ctx.fb, 0, ctx.width * ctx.height * ctx.pitch);
+  memset (ctx.fb, 0, ctx.pitch * 4 * ctx.height);
 }
 
 void

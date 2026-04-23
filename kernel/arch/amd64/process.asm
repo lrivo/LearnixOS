@@ -1,13 +1,26 @@
 BITS 64
 
 global test_ucode
+global test_ucode_sys
+
 test_ucode:
-  mov rax, 1
-  syscall
-  mov rax, 2
-  syscall
+.ll:
+  inc rax
+  inc rdi
+  inc rsi
+  inc rdx
+  jmp .ll
+
+test_ucode_sys:
 .loop:
+  mov rax, 1
+  mov rdi, 1
+  lea rsi, [rel msg]
+  mov rdx, 21
+  syscall
   jmp .loop
+
+msg db "Hello from userspace", 0
 
 ; rdi = struct arch_proc_context *prev 
 ; rsi = struct arch_proc_context *next

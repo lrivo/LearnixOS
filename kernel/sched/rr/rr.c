@@ -52,7 +52,6 @@ sched_pick_next (struct process *curr)
 void
 sched_tick (void)
 {
-  kprintf ("sched_tick: PID %u is running\n", arch_cpu_get ()->proc->pid);
   arch_cpu_get ()->proc_need_resched = true;
 }
 
