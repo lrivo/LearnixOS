@@ -152,6 +152,25 @@ kmain (void)
 
   sched_init ();
 
+  for (int i = 0; i < 0; i++)
+  {
+    p = proc_create ();
+
+    extern void test_ucode (void);
+    paddr_t ucode_pf = pmm_alloc (PMM_NONE);
+    memcpy ((void *)P2V (ucode_pf), (void *)test_ucode, 32);
+
+    // map userspace code and stack in p->pgtable
+    vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
+    vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
+             VMM_FLAG_USER | VMM_FLAG_WRITE);
+
+    // initialize the process's trap frame
+    arch_proc_init (p, ucode, ustack + PGSIZE);
+
+    sched_insert_proc (p);
+  }
+
   arch_interrupts_enable ();
   arch_cpu_hcf ();
 }

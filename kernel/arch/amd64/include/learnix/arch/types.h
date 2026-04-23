@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int64_t ssize_t;
+
 /* Memory */
 typedef uint64_t paddr_t; // a physical address
 typedef uint64_t vaddr_t; // a virtual address

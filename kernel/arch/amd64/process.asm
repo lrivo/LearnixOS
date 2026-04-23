@@ -3,8 +3,10 @@ BITS 64
 global test_ucode
 test_ucode:
   mov rax, 1
-  mov r15, 15
-.loop: 
+  syscall
+  mov rax, 2
+  syscall
+.loop:
   jmp .loop
 
 ; rdi = struct arch_proc_context *prev 

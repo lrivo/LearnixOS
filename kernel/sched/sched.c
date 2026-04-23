@@ -16,9 +16,6 @@ schedule ()
   next->state = RUNNING;
   arch_cpu_get ()->proc = next;
 
-  // TEST:
-  kprintf ("Context switch from %u => %u\n", curr->pid, next->pid);
-
   // context switch form curr to next
   arch_context_switch (curr, next);
 }

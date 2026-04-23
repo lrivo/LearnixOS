@@ -1,4 +1,5 @@
 #pragma once
+#include <learnix/arch/cpu.h>
 #include <learnix/process.h>
 #include <learnix/types.h>
 
@@ -7,10 +8,11 @@
  * can define additional stuff in arch_cpu */
 struct cpu
 {
-  struct cpu *self;
-  bool proc_need_resched;
+  struct cpu *self;       // 0
+  bool proc_need_resched; // 8
   uint32_t id;
-  struct process *proc;
+  struct process *proc;          // 16
+  struct arch_cpu_data cpu_data; // 24
 };
 
 struct cpu_info

@@ -36,9 +36,21 @@ arch_stage_2 ()
   // setup per-core struct
   struct cpu *cpu = (struct cpu *)kzalloc (sizeof (struct cpu));
   cpu->self = cpu;
-  cpu->proc_need_resched = true;
   wrmsr (0xC0000101, (uint64_t)cpu);
   wrmsr (0xC0000102, (uint64_t)cpu);
+
+  // enable SYSCALL/SYSRET
+  uint64_t efer = rdmsr (0xC0000080) | (1 << 0);
+  wrmsr (0xC0000080, efer);
+  // configure the STAR register
+  uint64_t star
+      = ((uint64_t)0x0010 << 48) | ((uint64_t)0x0008 << 32) | (uint32_t)0;
+  wrmsr (0xC0000081, star);
+  // configure the syscall entrypoint function in LSTAR
+  extern void syscall_entry (void);
+  wrmsr (0xC0000082, (uint64_t)syscall_entry); // TODO:
+  // disable interrupts while serving a syscall
+  wrmsr (0xC0000084, (1 << 9));
 }
 
 struct cpu *
