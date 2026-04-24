@@ -12,11 +12,12 @@ test_ucode:
   jmp .ll
 
 test_ucode_sys:
-.loop:
   mov rax, 1
   mov rdi, 1
   lea rsi, [rel msg]
   mov rdx, 21
+.loop:
+  mov rax, 1  ; rax contains 21 at this point
   syscall
   jmp .loop
 

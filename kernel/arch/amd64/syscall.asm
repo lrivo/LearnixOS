@@ -21,35 +21,45 @@ syscall_entry:
   swapgs              ; load kernel GS 
   mov [gs:24], rsp    ; save userspace rsp 
   mov rsp, [gs:16]    ; rsp = cpu->proc 
-  mov rsp, [rsp+8]   ; rsp = cpu->proc->kstack
+  mov rsp, [rsp+8]    ; rsp = cpu->proc->kstack
   add rsp, 4096       ; rsp += KSTACK_SIZE
   
-  push r11            ; save userspace RFLAGS
-  push rcx            ; save userspace RIP
-  
-  ; we need to translate the syscall calling convention (above)
-  ; to x86_64 C calling convention
-  ; r9 is first because the 6th C parameter must be passed on the stack
-  push r9
+  ; save general purpose registers
   push rax
-  push rdi
-  push rsi
+  push rbx
+  push rcx
   push rdx
-  push r10
+  push rbp
+  push rsi
+  push rdi
   push r8
-  pop r9 
-  pop r8
-  pop rcx
-  pop rdx
-  pop rsi
-  pop rdi
-  ; at this point the C function has num-arg4 on
-  ; rdi-rsi-rdx-rcx-r8-r9 and arg5 on the stack
-  call syscall_dispatcher
+  push r9
+  push r10
+  push r11
+  push r12
+  push r13
+  push r14
+  push r15
   
-  pop r9              ; the orignal arg5 is still on the stack
-  pop rcx             ; restore userspace RIP
-  pop r11             ; restore userspace RFLAGS
+  mov rdi, rsp
+  call syscall_dispatcher
+
+  ; restore general purpose registers
+  pop r15
+  pop r14
+  pop r13
+  pop r12
+  pop r11
+  pop r10
+  pop r9
+  pop r8
+  pop rdi
+  pop rsi
+  pop rbp
+  pop rdx 
+  pop rcx 
+  pop rbx
+  pop rax
 
   mov rsp, [gs:24]    ; restore userspace rsp 
   swapgs              ; restore userspace GS
