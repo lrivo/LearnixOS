@@ -18,7 +18,7 @@ void sched_tick (void);
 struct process *sched_pick_next (struct process *curr);
 
 /* Add a process to this scheduler's runqueue */
-void sched_insert_proc (struct process *p);
+void sched_enqueue (struct process *p);
 
 /* Remove a process from this scheduler's runqueue */
-void sched_remove_proc (struct process *p);
+void sched_dequeue (struct process *p);

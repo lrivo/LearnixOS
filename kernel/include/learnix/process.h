@@ -10,7 +10,7 @@ enum proc_state
   RUNNING, /* currently on the CPU */
   READY,   /* can run but CPU is busy */
   WAITING, /* suspended for I/O or something else */
-  EMBRYO,  /* not fully initialized */
+  ZOMBIE,  /* has called exit() but hasn't been fully deallocated. */
 };
 
 /* Process Control Block structure. */

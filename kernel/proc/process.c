@@ -36,7 +36,7 @@ proc_create (void)
 
   // give the process a pid
   p->pid = pid_cnt++;
-  p->state = EMBRYO;
+  p->state = READY;
 
   // give the process a fresh kernel stack
   p->kstack = (void *)P2V (pmm_alloc (PMM_ZERO));

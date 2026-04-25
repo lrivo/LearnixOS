@@ -12,7 +12,10 @@ schedule ()
     return; // nothing to schedule
 
   // update processes state
-  curr->state = READY;
+  if (curr->state == RUNNING)
+  {
+    curr->state = READY;
+  }
   next->state = RUNNING;
   arch_cpu_get ()->proc = next;
 

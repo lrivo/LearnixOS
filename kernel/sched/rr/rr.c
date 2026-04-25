@@ -1,29 +1,12 @@
-/*
- * Round Robin scheduling algorithm.
- *
- * The runqueue is a circular doubly-linked list so that
- * insertion and deletion are both O(1).
- */
-#include "learnix/cpu.h"
-#include "learnix/lib/kprintf.h"
+#include "rr.h"
 #include "learnix/process.h"
+#include <learnix/cpu.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
-#include <stddef.h>
-
-struct rr_node
-{
-  struct process *prev;
-  struct process *next;
-  uint64_t ticks_left;
-};
 
 static struct process *sentinel;
 
-/* We want to "pretend" that the kernel idle process (PID = 0)
- * was already running and the next process is the init (PID = 1)
- * so that we switch between them immediately. */
 void
 sched_init ()
 {
@@ -33,20 +16,20 @@ sched_init ()
   ((struct rr_node *)sentinel->sched_data)->prev = sentinel;
   ((struct rr_node *)sentinel->sched_data)->next = sentinel;
 
-  // insert the user init process
-  sched_insert_proc (proc_by_pid (1));
-
-  // force the initial CPU state
-  // to fake that PID 0 was running
-  arch_cpu_get ()->proc_need_resched = true;
+  /* pretend the kernel idle process was running and immediately
+   * needs to be rescheduled */
   arch_cpu_get ()->proc = sentinel;
+  arch_cpu_get ()->proc_need_resched = true;
 }
 
-/* Pick the next runnable process */
 struct process *
 sched_pick_next (struct process *curr)
 {
-  return ((struct rr_node *)curr->sched_data)->next;
+  struct rr_node *r = (struct rr_node *)curr->sched_data;
+  while (r->next->state != READY)
+    r = (struct rr_node *)r->next->sched_data;
+
+  return r->next;
 }
 
 void
@@ -55,11 +38,10 @@ sched_tick (void)
   arch_cpu_get ()->proc_need_resched = true;
 }
 
-/* Linked-List tail insertion */
 void
-sched_insert_proc (struct process *p)
+sched_enqueue (struct process *p)
 {
-  // p must not have been alread inserted
+  // p must not be in the runqueue
   kassert (p != NULL && p != sentinel && p->sched_data == NULL);
 
   struct rr_node *new = kmalloc (sizeof (struct rr_node));
@@ -73,11 +55,10 @@ sched_insert_proc (struct process *p)
   p->sched_data = (void *)new;
 }
 
-/* Linked-List removal */
 void
-sched_remove_proc (struct process *p)
+sched_dequeue (struct process *p)
 {
-  // p must've been already inserted
+  // p must be in the runqueue
   kassert (p != NULL && p != sentinel && p->sched_data != NULL);
 
   struct rr_node *curr = (struct rr_node *)p->sched_data;

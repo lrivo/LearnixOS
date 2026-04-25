@@ -1,5 +1,6 @@
-#include "learnix/arch/syscall.h"
+#include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/scheduler.h>
 #include <learnix/syscall.h>
 
 void
@@ -11,7 +12,11 @@ syscall_dispatcher (struct sys_trap_frame *tf)
   case SYS_WRITE:
     sys_write (tf);
     break;
+  case SYS_EXIT:
+    sys_exit (tf);
+    break;
   default:
+    tf->rax = -1;
     break;
   }
 }
@@ -28,4 +33,19 @@ sys_write (struct sys_trap_frame *tf)
 
   // write() should return the number of written chars
   tf->rax = count;
+}
+
+/* for now we just mark the current process
+   as zombie and immediately schedule to the next
+   runnable process. */
+void
+sys_exit (struct sys_trap_frame *tf)
+{
+  (void)tf;
+
+  arch_cpu_get ()->proc->state = ZOMBIE;
+
+  schedule ();
+
+  // will never return here
 }

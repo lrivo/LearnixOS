@@ -1,3 +1,4 @@
+#include "learnix/arch/types.h"
 #include "learnix/scheduler.h"
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
@@ -58,6 +59,26 @@ __attribute__ ((used,
 __attribute__ ((used,
                 section (".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
+
+static void
+test_proc_init (vaddr_t ucode, vaddr_t ustack, vaddr_t exec)
+{
+  struct process *p = proc_create ();
+
+  // copy the exec into the userspace page
+  paddr_t ucode_pf = pmm_alloc (PMM_NONE);
+  memcpy ((void *)P2V (ucode_pf), (void *)exec, 64);
+
+  // map userspace code and stack
+  vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
+
+  vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
+           VMM_FLAG_USER | VMM_FLAG_WRITE);
+
+  arch_proc_init (p, ucode, ustack + PGSIZE);
+
+  sched_enqueue (p);
+}
 
 // memlayout.h global variables needed for translations
 vaddr_t hhdm_offset, kernel_virt_base;
@@ -123,50 +144,26 @@ kmain (void)
   // post ACPI initialization, for running processes
   arch_stage_2 ();
 
-  // Initialize the PS/2 keyboard.
-  ps2kb_init ();
-
   // Initialize the kernel idle process
   proc_init ();
 
-  // TEST: start a dummy process
-  vaddr_t ucode = 0x400000UL;        // 4MB
-  vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
-  struct process *p = proc_create ();
-
-  extern void test_ucode_sys (void);
-  paddr_t ucode_pf = pmm_alloc (PMM_NONE);
-  memcpy ((void *)P2V (ucode_pf), (void *)test_ucode_sys, 64);
-
-  // map userspace code and stack in p->pgtable
-  vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
-  vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
-           VMM_FLAG_USER | VMM_FLAG_WRITE);
-
-  // initialize the process's trap frame
-  arch_proc_init (p, ucode, ustack + PGSIZE);
-
+  // Initialize the scheduler
   sched_init ();
 
-  for (int i = 0; i < 9; i++)
-  {
-    p = proc_create ();
+  // Initialize the PS/2 keyboard
+  ps2kb_init ();
 
-    extern void test_ucode (void);
-    paddr_t ucode_pf = pmm_alloc (PMM_NONE);
-    memcpy ((void *)P2V (ucode_pf), (void *)test_ucode, 32);
+  // TEST: idle process (PID 1)
+  extern void test_ucode (void);
+  extern void test_ucode_sys (void);
+  vaddr_t ucode = 0x400000UL;        // 4MB
+  vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
+  test_proc_init (ucode, ustack, (vaddr_t)test_ucode_sys);
 
-    // map userspace code and stack in p->pgtable
-    vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
-    vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
-             VMM_FLAG_USER | VMM_FLAG_WRITE);
+  for (int i = 0; i < 10; i++)
+    test_proc_init (ucode, ustack, (vaddr_t)test_ucode);
 
-    // initialize the process's trap frame
-    arch_proc_init (p, ucode, ustack + PGSIZE);
-
-    sched_insert_proc (p);
-  }
-
+  // Done, the kernel idle process will spin here forever
   arch_interrupts_enable ();
   arch_cpu_hcf ();
 }
