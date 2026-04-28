@@ -50,15 +50,13 @@ void proc_destroy (struct process *p);
 
 struct process *proc_by_pid (pid_t pid);
 
-// ===== UNIX ====== //
-pid_t proc_fork (struct process *p);
-void proc_exit (struct process *p);
-
 // ===== ARCH DEPENDENT CODE ====== //
 /* Build the initial kernel stack state for a new process */
 void arch_proc_init (struct process *p, vaddr_t user_ip, vaddr_t user_sp);
 
 /* Does context-switch from prev to next */
 void arch_context_switch (struct process *prev, struct process *next);
+
+void arch_copyuvm (struct process *parent, struct process *child);
 
 void arch_test_jump_usermode (struct intr_trap_frame *tf);

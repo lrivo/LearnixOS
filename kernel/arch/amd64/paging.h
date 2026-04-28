@@ -18,6 +18,10 @@
 #define PML1_IDX(va) (((vaddr_t)(va) >> 12) & 0x1FF)
 #define VA_OFFSET(va) ((vaddr_t)(va) & 0x1FF)
 
+#define VADDR_IDXS(p4, p3, p2, p1)                                             \
+  (((uint64_t)(p4) << 39) | ((uint64_t)(p3) << 30) | ((uint64_t)(p2) << 21)    \
+   | ((uint64_t)(p1) << 12))
+
 #define PTE_PRESENT (1ULL << 0)
 #define PTE_WRITE (1ULL << 1)
 #define PTE_PWT (1ULL << 3) // write-through

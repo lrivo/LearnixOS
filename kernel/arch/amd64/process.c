@@ -2,8 +2,12 @@
  *  x86_64 arch functions for processes.
  */
 #include "gdt.h"
+#include "learnix/mm/pmm.h"
+#include "learnix/mm/vmm.h"
+#include "paging.h"
 #include <learnix/arch/memlayout.h>
 #include <learnix/arch/types.h>
+#include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 #include <learnix/process.h>
 
@@ -63,4 +67,56 @@ arch_context_switch (struct process *prev, struct process *next)
 
   /* we'll re-enter here the next time prev will be
      scheduled. */
+}
+
+void
+arch_copyuvm (struct process *parent, struct process *child)
+{
+  // walk parent's PML4 user split
+  pml4_t *pml4 = (pml4_t *)parent->pgtable;
+  for (size_t i = 0; i < 256; i++)
+  {
+    // present PML4 entry found, search the pml3
+    if (pml4[i] & PTE_PRESENT)
+    {
+      pml3_t *pml3 = (pml3_t *)P2V (pml4[i] & PTE_PA_MASK);
+      for (size_t j = 0; j < 512; j++)
+      {
+        if (pml3[j] & PTE_PRESENT)
+        {
+          pml2_t *pml2 = (pml2_t *)P2V (pml3[j] & PTE_PA_MASK);
+          for (size_t k = 0; k < 512; k++)
+          {
+            // we found a PTE
+            if (pml2[k] & PTE_PRESENT)
+            {
+              pte_t *pte = (pte_t *)P2V (pml2[k] & PTE_PA_MASK);
+              for (size_t z = 0; z < 512; z++)
+              {
+                // we found an actual page
+                if (pte[z] & PTE_PRESENT)
+                {
+                  // reconstruct his virtual address from i,j,k,z
+                  vaddr_t va = VADDR_IDXS (i, j, k, z);
+
+                  // get his physical address
+                  paddr_t pa_parent = pte[z] & PTE_PA_MASK;
+
+                  // request a physical page for the child
+                  paddr_t pa_child = pmm_alloc (PMM_NONE);
+                  memcpy ((void *)P2V (pa_child), (void *)P2V (pa_parent),
+                          PGSIZE);
+
+                  // TODO: should extract the flags from the parent PTE
+                  // map it for the child
+                  vmm_map (child->pgtable, va, pa_child,
+                           VMM_FLAG_USER | VMM_FLAG_WRITE);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
