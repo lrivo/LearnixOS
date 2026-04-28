@@ -1,7 +1,7 @@
 BITS 64
 section .text
 
-; C function that selects the correct syscall handler
+extern kernel_exit
 extern syscall_dispatcher
 
 ; x86_64 syscall calling convention
@@ -24,7 +24,18 @@ syscall_entry:
   mov rsp, [rsp+8]    ; rsp = cpu->proc->kstack
   add rsp, 4096       ; rsp += KSTACK_SIZE
   
-  ; save general purpose registers
+  ; construct the x86_64 struct intr_trap_frame
+  push qword 0x1B     ; GDT_UDATA | 3 
+  push qword [gs:24]  ; userspace RSP
+  push r11            ; rflags
+  push qword 0x23     ; GDT_UCODE | 3
+  push rcx            ; userspace RIP
+
+  ; push dummy error code and vector_num
+  push qword 0
+  push qword 0
+
+  ; general purpose registers (rcx and r11 are meaningless here)
   push rax
   push rbx
   push rcx
@@ -43,24 +54,6 @@ syscall_entry:
   
   mov rdi, rsp
   call syscall_dispatcher
-
-  ; restore general purpose registers
-  pop r15
-  pop r14
-  pop r13
-  pop r12
-  pop r11
-  pop r10
-  pop r9
-  pop r8
-  pop rdi
-  pop rsi
-  pop rbp
-  pop rdx 
-  pop rcx 
-  pop rbx
-  pop rax
-
-  mov rsp, [gs:24]    ; restore userspace rsp 
-  swapgs              ; restore userspace GS
-  o64 sysret          ; fast return from syscall
+  
+  ; go through the common kernel_exit
+  jmp kernel_exit

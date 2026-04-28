@@ -4,6 +4,8 @@ global test_ucode
 global test_ucode_sys
 
 test_ucode:
+  mov rax, 57 
+  syscall
   mov rax, 60
   mov rdi, 1
   syscall

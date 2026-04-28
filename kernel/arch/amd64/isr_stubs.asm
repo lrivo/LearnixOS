@@ -66,29 +66,12 @@ reloadSegments:
   swapgs                  ; YES, then load kernel' GS
 
 %%from_kern               ; jump here if the IRQ was generated in ring 0
-  push_regs               ; save general purpose registers
-  
-  mov rdi, rsp            ; pass the current stack frame to intr_dispatcher
-  call intr_dispatcher    ; let C code handle the interrupt
+  push_regs
 
-  ; NOTE: at this point rsp points at r15, the last pushed register
-  
-  ; can we schedule?
-  cmp byte [gs:8], 0      ; is cpu->proc_need_resched == 0?
-  jz %%no_resched         ; YES, immediately return from the interrupt
+  mov rdi, rsp
+  call intr_dispatcher
 
-  mov byte [gs:8], 0      ; NO, clear it 
-  call schedule           ; and then invoke the scheduler
-
-%%no_resched:             ; jump here if, after intr_dispatcher, we don't need to schedule the process
-  pop_regs                ; restore general purpose registers
-  add rsp, 16             ; skip error code and vector number
-  test [rsp+8], 3         ; CS & 3 (to check if we are returning to userspace) 
-  jz %%ret_kern           ; if not set we are returning from a kernel interrupt (can't happen now)
-  swapgs                  ; restore userspace GS
-
-%%ret_kern:               ; jump here if returning from an interrupt in kernel space
-  iretq                   ; return from interrupt
+  jmp kernel_exit
 %endmacro
 
 %macro isr_noerr 1 
@@ -104,8 +87,8 @@ isr_stub_%+%1:
   isr_common
 %endmacro
 
+extern kernel_exit
 extern intr_dispatcher
-extern schedule
 isr_noerr 0       ; Division by Zero
 isr_noerr 1       ; Debug Exception
 isr_noerr 2       ; NMI Interrupt (Non Maskable)

@@ -160,7 +160,7 @@ kmain (void)
   vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
   test_proc_init (ucode, ustack, (vaddr_t)test_ucode_sys);
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < 1; i++)
     test_proc_init (ucode, ustack, (vaddr_t)test_ucode);
 
   // Done, the kernel idle process will spin here forever

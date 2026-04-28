@@ -4,13 +4,16 @@
 #include <learnix/syscall.h>
 
 void
-syscall_dispatcher (struct sys_trap_frame *tf)
+syscall_dispatcher (struct intr_trap_frame *tf)
 {
   size_t num = NUM (tf);
   switch (num)
   {
   case SYS_WRITE:
     sys_write (tf);
+    break;
+  case SYS_FORK:
+    sys_fork (tf);
     break;
   case SYS_EXIT:
     sys_exit (tf);
@@ -22,7 +25,7 @@ syscall_dispatcher (struct sys_trap_frame *tf)
 }
 
 void
-sys_write (struct sys_trap_frame *tf)
+sys_write (struct intr_trap_frame *tf)
 {
   char *buf = (char *)ARG1 (tf);
   size_t count = (size_t)ARG2 (tf);
@@ -39,7 +42,7 @@ sys_write (struct sys_trap_frame *tf)
    as zombie and immediately schedule to the next
    runnable process. */
 void
-sys_exit (struct sys_trap_frame *tf)
+sys_exit (struct intr_trap_frame *tf)
 {
   (void)tf;
 
