@@ -2,7 +2,7 @@
 .SUFFIXES:
 
 # Default user QEMU flags. These are appended to the QEMU command calls.
-QEMUFLAGS := -m 2G -no-reboot -d cpu_reset
+QEMUFLAGS := -m 2G -no-reboot -d cpu_reset -nographic -serial mon:stdio
 
 override IMAGE_NAME := learnixos
 

@@ -3,6 +3,7 @@
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
+#include <learnix/drivers/serial.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
 #include <learnix/interrupts.h>
@@ -85,9 +86,10 @@ vaddr_t hhdm_offset, kernel_virt_base;
 paddr_t kernel_phys_base;
 
 void
-_putchar (char character)
+_putchar (char c)
 {
-  console_putchar (character);
+  serial_putchar (c);
+  console_putchar (c);
 }
 
 /* Kernel's entrypoint function as defined by the linker script.
@@ -115,6 +117,9 @@ kmain (void)
   {
     arch_cpu_hcf ();
   }
+  
+  // Initialize the serial console.  
+  serial_init();
 
   // Fetch the first framebuffer.
   struct limine_framebuffer *framebuffer
