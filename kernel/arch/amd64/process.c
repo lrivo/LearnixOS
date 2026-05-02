@@ -19,6 +19,25 @@ extern void jump_usr_first_time (void);
 extern void _switch_to (struct arch_proc_context *prev,
                         struct arch_proc_context *next);
 
+// TODO: this is only used by copyuvm() to correctly inherit the
+// paging flags of the parent (especially the NX bit).
+static int
+pte_extract_flags(pte_t *pte)
+{
+  int flags = 0;
+
+  if (*pte & PTE_WRITE)
+    flags |= VMM_FLAG_WRITE;
+  if (*pte & PTE_USER)
+    flags |= VMM_FLAG_USER;
+  if (*pte & PTE_GLOBAL)
+    flags |= VMM_FLAG_GLOBAL;
+  if (!(*pte & PTE_NX))
+    flags |= VMM_FLAG_EXEC; 
+
+  return flags;
+}
+
 void
 arch_proc_init (struct process *p, vaddr_t user_ip, vaddr_t user_sp)
 {
@@ -109,8 +128,7 @@ arch_copyuvm (struct process *parent, struct process *child)
 
                   // TODO: should extract the flags from the parent PTE
                   // map it for the child
-                  vmm_map (child->pgtable, va, pa_child,
-                           VMM_FLAG_USER | VMM_FLAG_WRITE);
+                  vmm_map (child->pgtable, va, pa_child, pte_extract_flags(pte));
                 }
               }
             }

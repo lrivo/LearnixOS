@@ -1,22 +1,8 @@
-#include "learnix/arch/types.h"
 #include "paging.h"
 #include <learnix/arch/memlayout.h>
+#include <learnix/arch/vmm.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
-
-/*
- * QUESTION: is it ok to leave this here instead of an arch independent
- * mm/vvm.c ??
- * Honestly, the mm/vmm.c is probably the better approach, but right now
- * I don't know how to properly design it so I'll leave it this way and
- * will refactor later if I have the time.
- *
- * those functions need pgdirwalk so I am putting them under arch/amd64
- * for this exact reason.
- * the rest of the kernel arch indipendent code will mostly use
- * kmall() btw.
- */
-static pml4_t kern_pgtable;
 
 static int
 pml_unused (vaddr_t pml)
@@ -76,14 +62,8 @@ pgdirwalk (pml4_t *pml4, uintptr_t va, int flags, pml3_t **pml3out,
   return (pte_t *)&p[(va >> 12) & 0x1FF];
 }
 
-void
-vmm_init (void)
-{
-  kern_pgtable = (pml4_t)vmm_get_pgtable ();
-}
-
 int
-vmm_map (void *pgtable, vaddr_t va, paddr_t pa, int flags)
+arch_pg_map (vaddr_t pgtable, vaddr_t va, paddr_t pa, int flags)
 {
   pml4_t *pml4 = (pml4_t *)pgtable;
   pml3_t *pml3;
@@ -92,9 +72,25 @@ vmm_map (void *pgtable, vaddr_t va, paddr_t pa, int flags)
   // make sure va is mapped, allocate missing pml3 and/or pml2
   pte_t *pte = pgdirwalk (pml4, va, 1, &pml3, &pml2);
 
+  // translate the generic flags to x86_64
   if (pte)
   {
-    uint64_t pte_flags = PTE_PRESENT | PTE_WRITE;
+    // by default we make the page present, readable and not executable
+    uint64_t pte_flags = PTE_PRESENT | PTE_NX;
+    
+    // set the write bit if requested 
+    if (flags & VMM_FLAG_WRITE)
+      pte_flags |= PTE_WRITE;
+
+    // clear the NX bit for executable pages
+    if (flags & VMM_FLAG_EXEC)
+      pte_flags &= ~PTE_NX;
+    
+    // map only the PTE as cache-disabled
+    if (flags & VMM_FLAG_NOCACHE)
+      pte_flags |= PTE_PWT | PTE_PCD;
+
+    // SECURITY: assert va belongs to the userland split
     // make sure all levels are mapped as user
     if (flags & VMM_FLAG_USER)
     {
@@ -103,23 +99,18 @@ vmm_map (void *pgtable, vaddr_t va, paddr_t pa, int flags)
       *pml2 |= PTE_USER;
       pte_flags |= PTE_USER;
     }
-    // map only the PTE as cache-disabled
-    if (flags & VMM_FLAG_NOCACHE)
-    {
-      pte_flags |= PTE_PWT | PTE_PCD;
-    }
+
+    // update the pte and flush the TLB
     *pte = PGROUNDDOWN (pa) | pte_flags;
-    vmm_flush_single (va);
-    return 1;
+    arch_tlb_flush (va);
+    return 0;
   }
   else
-  {
     return -1;
-  }
 }
 
 int
-vmm_unmap (void *pgtable, vaddr_t va)
+arch_pg_unmap (vaddr_t pgtable, vaddr_t va)
 {
   /* in this case we want pgdirwalk to return us pointers to
      the intermediate levels, in case we need to free them too. */
@@ -134,7 +125,7 @@ vmm_unmap (void *pgtable, vaddr_t va)
 
   // mark the pte not present and flush va from the TLB
   *pte &= ~PTE_PRESENT;
-  vmm_flush_single (va);
+  arch_tlb_flush (va);
 
   // try to free the physical frame of va
   pmm_unref_pg (*pte & PTE_PA_MASK);
@@ -170,48 +161,14 @@ vmm_unmap (void *pgtable, vaddr_t va)
     pmm_unref_pg (pa);
   }
 
-  return 1;
+  return 0;
 }
 
 paddr_t
-vmm_va_to_pa (void *pgtable, vaddr_t va)
+arch_va_to_pa (vaddr_t pgtable, vaddr_t va)
 {
   // walk the page table without allocating not present intermediate levels
   pte_t *pte = pgdirwalk ((pml4_t *)pgtable, va, 0, NULL, NULL);
 
   return pte ? (*pte & PTE_PA_MASK) + (va & 0xFFF) : 0;
-}
-
-inline vaddr_t
-vmm_get_kern_pgtable (void)
-{
-  return (vaddr_t)kern_pgtable;
-}
-
-inline vaddr_t
-vmm_get_pgtable (void)
-{
-  vaddr_t val;
-  asm volatile ("mov %%cr3,%0" : "=r"(val));
-  return (vaddr_t)P2V (val & ~0xFFFULL);
-}
-
-inline void
-vmm_swap_pgtable (void *new_pgtable)
-{
-  asm volatile ("mov %0,%%cr3" ::"r"(V2P (new_pgtable)));
-}
-
-inline void
-vmm_flush_single (vaddr_t va)
-{
-  asm volatile ("invlpg (%0)" ::"r"(va) : "memory");
-}
-
-inline void
-vmm_flush_all (void)
-{
-  uint64_t cr3old;
-  asm volatile ("mov %%cr3,%0" : "=r"(cr3old));
-  asm volatile ("mov %0,%%cr3" ::"r"(cr3old));
 }

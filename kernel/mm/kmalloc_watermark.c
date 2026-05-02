@@ -1,24 +1,23 @@
-#include <learnix/lib/kpanic.h>
-#include <learnix/lib/string.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
-#include <learnix/types.h>
+#include <learnix/lib/string.h>
 
 static void *watermark, *end;
 
 static inline void
 kmalloc_grow ()
 {
-  // FIXME: kernel page table
-  vmm_map ((void *)vmm_get_pgtable (), (vaddr_t)end, pmm_alloc (0), 1);
+  // end is always in the next unmapped page
+  vmm_map (vmm_get_kern_pgtable(), (vaddr_t)end, pmm_alloc (PMM_ZERO), VMM_FLAG_WRITE);
   end += 4096;
 }
 
 void
-kmalloc_init (void *heap_start, size_t heap_size)
+kmalloc_init (vaddr_t heap_start, size_t heap_size)
 {
-  watermark = heap_start;
+  vmm_map (vmm_get_kern_pgtable(), heap_start, pmm_alloc (PMM_ZERO), VMM_FLAG_WRITE);
+  watermark = (void*)heap_start;
   end = (void *)((size_t)heap_start + heap_size);
 }
 

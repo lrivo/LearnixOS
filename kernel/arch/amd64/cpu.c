@@ -25,6 +25,9 @@ arch_stage_1 ()
 {
   gdt_init ();
   idt_init ();
+  
+  // enable the NX bit
+  wrmsr (0xC0000080, rdmsr(0xC0000080) | (1ULL << 11));
 }
 
 void

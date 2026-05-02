@@ -34,8 +34,8 @@ lapic_init ()
 {
   /* Map the LAPIC register at a known virtual address, because MMIO
      is not covered by HHDM. */
-  vmm_map ((void *)vmm_get_pgtable (), LAPIC_VIRT_BASE, get_lapic_base_phys (),
-           VMM_FLAG_NOCACHE);
+  vmm_map (vmm_get_kern_pgtable (), (vaddr_t)LAPIC_VIRT_BASE,
+           get_lapic_base_phys (), VMM_FLAG_WRITE | VMM_FLAG_NOCACHE);
 
   /* is x2APIC on?
   uint32_t apic_msr_limine = rdmsr (APIC_BASE_MSR);

@@ -7,7 +7,7 @@
 
 /* Initializes the kernel heap, must be called after the PMM
    is operational.  */
-void kmalloc_init (void *heap_start, size_t heap_size);
+void kmalloc_init (vaddr_t heap_start, size_t heap_size);
 
 void *kmalloc (size_t size);
 void *kzalloc (size_t size);

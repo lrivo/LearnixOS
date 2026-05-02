@@ -3,9 +3,9 @@
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
-#include <learnix/drivers/serial.h>
 #include <learnix/drivers/console/console.h>
 #include <learnix/drivers/input/ps2kb.h>
+#include <learnix/drivers/serial.h>
 #include <learnix/interrupts.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
@@ -70,14 +70,17 @@ test_proc_init (vaddr_t ucode, vaddr_t ustack, vaddr_t exec)
   paddr_t ucode_pf = pmm_alloc (PMM_NONE);
   memcpy ((void *)P2V (ucode_pf), (void *)exec, 64);
 
-  // map userspace code and stack
+  // map user code as read-only and executable
   vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
 
+  // map user stack as RW and non executable
   vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
            VMM_FLAG_USER | VMM_FLAG_WRITE);
 
+  // initialize the process's trap frame
   arch_proc_init (p, ucode, ustack + PGSIZE);
 
+  // add the process to the runqueue
   sched_enqueue (p);
 }
 
@@ -117,9 +120,9 @@ kmain (void)
   {
     arch_cpu_hcf ();
   }
-  
-  // Initialize the serial console.  
-  serial_init();
+
+  // Initialize the serial console.
+  serial_init ();
 
   // Fetch the first framebuffer.
   struct limine_framebuffer *framebuffer
@@ -141,10 +144,8 @@ kmain (void)
   // Initialize the physical memory allocator using Limine's memmap.
   pmm_init (memmap_request.response);
 
-  // Initialize the kernel heap with a single 4KB page
-  vaddr_t kern_pgtable = vmm_get_pgtable ();
-  vmm_map ((void *)kern_pgtable, KMALLOC_START, pmm_alloc (PMM_ZERO), 0);
-  kmalloc_init ((void *)KMALLOC_START, 4096);
+  // Initialize the kernel heap
+  kmalloc_init ((vaddr_t)KMALLOC_START, PGSIZE);
 
   // post ACPI initialization, for running processes
   arch_stage_2 ();

@@ -38,7 +38,8 @@ ioapic_init ()
   paddr_t pa = acpi_get_ioapic ();
 
   // map it in the kernel's page table
-  vmm_map ((void *)vmm_get_pgtable (), P2V (pa), pa, VMM_FLAG_NOCACHE);
+  vmm_map (vmm_get_kern_pgtable(), P2V (pa), pa, 
+    VMM_FLAG_WRITE | VMM_FLAG_NOCACHE);
 
   // save the MMIO registers
   regsel = (volatile uint32_t *)P2V (pa);

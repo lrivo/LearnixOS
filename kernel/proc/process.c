@@ -17,8 +17,8 @@ proc_init (void)
   struct process *idle = kzalloc (sizeof (struct process));
   idle->pid = 0;
   idle->state = RUNNING;
-  idle->pgtable = (void *)vmm_get_kern_pgtable ();
-  idle->kstack = (void *)P2V (pmm_alloc (PMM_NONE));
+  idle->pgtable = vmm_get_kern_pgtable ();
+  idle->kstack = P2V(pmm_alloc (PMM_NONE));
 
   procs[0] = idle;
 }
@@ -39,7 +39,7 @@ proc_create (void)
   p->state = READY;
 
   // give the process a fresh kernel stack
-  p->kstack = (void *)P2V (pmm_alloc (PMM_ZERO));
+  p->kstack = P2V (pmm_alloc (PMM_ZERO));
 
   /* All process must inherit the kernel's page
    * table, otherwise we would have to switch it
@@ -49,8 +49,8 @@ proc_create (void)
    * NOTE: if the kernel where to add a new PML4
    * mapping (x86_64) processes created before it
    * won't see it. */
-  p->pgtable = (void *)P2V (pmm_alloc (PMM_NONE));
-  memcpy (p->pgtable, (void *)vmm_get_kern_pgtable (), PGSIZE);
+  p->pgtable = P2V(pmm_alloc (PMM_NONE));
+  memcpy((void*)p->pgtable, (void*)vmm_get_kern_pgtable(), PGSIZE);
 
   procs[p->pid] = p;
 

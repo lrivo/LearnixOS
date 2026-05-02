@@ -21,10 +21,10 @@ struct process
   enum proc_state state;
 
   /* process kernel stack */
-  void *kstack;
+  vaddr_t kstack;
 
   /* page table root of this process */
-  void *pgtable;
+  vaddr_t pgtable;
 
   /* points to the interrupt struct frame on
    * the kernel stack (architecture-specific) */
