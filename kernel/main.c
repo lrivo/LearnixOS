@@ -133,6 +133,7 @@ kmain (void)
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
 
+  // Initialize the virtual memory manager
   vmm_init ();
 
   // Essential CPU initialization like exception handlers

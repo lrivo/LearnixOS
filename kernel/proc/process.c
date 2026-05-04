@@ -49,8 +49,7 @@ proc_create (void)
    * NOTE: if the kernel where to add a new PML4
    * mapping (x86_64) processes created before it
    * won't see it. */
-  p->pgtable = P2V(pmm_alloc (PMM_NONE));
-  memcpy((void*)p->pgtable, (void*)vmm_get_kern_pgtable(), PGSIZE);
+  p->pgtable = uvm_alloc();
 
   procs[p->pid] = p;
 

@@ -44,3 +44,8 @@ vaddr_t vmm_get_kern_pgtable ();
 
 /* Returns the HHDM address of the current page table root. */
 vaddr_t vmm_get_pgtable ();
+
+// ## UVM ##
+
+/* Returns a new page table root with kernel mappings. */
+vaddr_t uvm_alloc();

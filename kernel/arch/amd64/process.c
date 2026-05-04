@@ -125,9 +125,8 @@ arch_copyuvm (struct process *parent, struct process *child)
                   paddr_t pa_child = pmm_alloc (PMM_NONE);
                   memcpy ((void *)P2V (pa_child), (void *)P2V (pa_parent),
                           PGSIZE);
-
-                  // TODO: should extract the flags from the parent PTE
-                  // map it for the child
+                  
+                  // map va with the same flags of the parent
                   vmm_map (child->pgtable, va, pa_child, pte_extract_flags(pte));
                 }
               }

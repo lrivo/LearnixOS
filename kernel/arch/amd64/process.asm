@@ -4,10 +4,7 @@ global test_ucode
 global test_ucode_sys
 
 test_ucode:
-  mov rax, 57 
-  syscall
-  mov rax, 60
-  mov rdi, 1
+  mov rax, 59
   syscall
 .l:
   jmp .l  ; should never return here
@@ -16,7 +13,7 @@ test_ucode_sys:
   mov rax, 1
   mov rdi, 1
   lea rsi, [rel msg]
-  mov rdx, 1
+  mov rdx, 0 
 .loop:
   mov rax, 1  ; rax contains 21 at this point
   syscall

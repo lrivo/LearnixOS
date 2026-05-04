@@ -15,6 +15,9 @@ syscall_dispatcher (struct intr_trap_frame *tf)
   case SYS_FORK:
     sys_fork (tf);
     break;
+  case SYS_EXECVE:
+    sys_execve (tf);
+    break;
   case SYS_EXIT:
     sys_exit (tf);
     break;
