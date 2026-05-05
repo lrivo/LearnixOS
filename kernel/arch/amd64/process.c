@@ -89,10 +89,10 @@ arch_context_switch (struct process *prev, struct process *next)
 }
 
 void
-arch_copyuvm (struct process *parent, struct process *child)
+arch_uvm_copy_or_destroy(vaddr_t dest, vaddr_t src, bool destroy)
 {
   // walk parent's PML4 user split
-  pml4_t *pml4 = (pml4_t *)parent->pgtable;
+  pml4_t *pml4 = (pml4_t *)src;
   for (size_t i = 0; i < 256; i++)
   {
     // present PML4 entry found, search the pml3
@@ -118,16 +118,24 @@ arch_copyuvm (struct process *parent, struct process *child)
                   // reconstruct his virtual address from i,j,k,z
                   vaddr_t va = VADDR_IDXS (i, j, k, z);
 
-                  // get his physical address
-                  paddr_t pa_parent = pte[z] & PTE_PA_MASK;
+                  // if we need to destroy
+                  if (destroy)
+                  {
+                    vmm_unmap(src, va);
+                  }
+                  else
+                  {
+                    // get his physical address
+                    paddr_t pa_parent = pte[z] & PTE_PA_MASK;
 
-                  // request a physical page for the child
-                  paddr_t pa_child = pmm_alloc (PMM_NONE);
-                  memcpy ((void *)P2V (pa_child), (void *)P2V (pa_parent),
+                    // request a physical page for the child
+                    paddr_t pa_child = pmm_alloc (PMM_NONE);
+                    memcpy ((void *)P2V (pa_child), (void *)P2V (pa_parent),
                           PGSIZE);
                   
-                  // map va with the same flags of the parent
-                  vmm_map (child->pgtable, va, pa_child, pte_extract_flags(pte));
+                    // map va with the same flags of the parent
+                    vmm_map (dest, va, pa_child, pte_extract_flags(pte));
+                  }
                 }
               }
             }

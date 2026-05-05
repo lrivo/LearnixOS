@@ -18,9 +18,10 @@ extern vaddr_t kernel_virt_base;
 extern paddr_t kernel_phys_base;
 
 /* Known/constant addresses */
+#define KERN_SPLIT_START 0xffff800000000000ULL
+
 // TODO: remember to not hardcode this when KASLR will be on
 #define KMALLOC_START 0xFFFF808000000000ULL // pml4[257]
-
 #define LAPIC_VIRT_BASE 0xffff900000000000ULL
 
 /* Page frames math. */
@@ -31,3 +32,7 @@ extern paddr_t kernel_phys_base;
 /* HHDM translation macros. */
 #define P2V(pa) ((uintptr_t)(pa) + (hhdm_offset))
 #define V2P(va) ((uintptr_t)(va) - (hhdm_offset))
+
+/* Address validation macros. */
+#define IS_USRADDR(va) ((uintptr_t)(va) < KERN_SPLIT_START)
+#define IS_KVADDR(va) ((uintptr_t)(va) >= KERN_SPLIT_START) 

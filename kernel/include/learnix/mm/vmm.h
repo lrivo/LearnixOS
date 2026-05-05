@@ -49,3 +49,10 @@ vaddr_t vmm_get_pgtable ();
 
 /* Returns a new page table root with kernel mappings. */
 vaddr_t uvm_alloc();
+
+/* Maps the same userspace addresses of src into dest. */
+int uvm_copy(vaddr_t dest, vaddr_t src);
+void arch_uvm_copy_or_destroy(vaddr_t dest, vaddr_t src, bool destroy);
+
+/* Unmaps the given uvm. */
+int uvm_destroy(vaddr_t pgtable);

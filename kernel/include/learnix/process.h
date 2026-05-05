@@ -57,6 +57,4 @@ void arch_proc_init (struct process *p, vaddr_t user_ip, vaddr_t user_sp);
 /* Does context-switch from prev to next */
 void arch_context_switch (struct process *prev, struct process *next);
 
-void arch_copyuvm (struct process *parent, struct process *child);
-
 void arch_test_jump_usermode (struct intr_trap_frame *tf);

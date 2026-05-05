@@ -15,15 +15,29 @@ uvm_alloc()
   return pgtable;
 }
 
-void
+int
 uvm_copy(vaddr_t dest, vaddr_t src)
 {
-  // TODO: just calls arch_copyuvm
+  if (dest == 0 || src == 0)
+    return -1;
+
+  if (dest != src)
+    arch_uvm_copy_or_destroy(dest, src, false); 
+
+  return 0;
 }
 
-void
-uvm_free(vaddr_t uvm)
+int
+uvm_destroy(vaddr_t pgtable)
 {
-  // TODO: recursively free userspace mappings
-  // and intermediate levels too
+  if (pgtable == 0)
+    return -1;
+  
+  // walk and destroy all userspace mappings
+  arch_uvm_copy_or_destroy(0, pgtable, true);
+
+  // free the page table root
+  pmm_unref_pg(V2P(pgtable));
+
+  return 0;
 }

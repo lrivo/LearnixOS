@@ -80,6 +80,8 @@ kernel/.deps-obtained:
 .PHONY: kernel
 kernel: kernel/.deps-obtained
 	$(MAKE) -C kernel
+	$(MAKE) -C liblearnix
+	$(MAKE) -C userspace
 
 $(IMAGE_NAME).iso: limine/limine kernel
 	rm -rf iso_root
@@ -116,6 +118,8 @@ format:
 .PHONY: clean
 clean:
 	$(MAKE) -C kernel clean
+	$(MAKE) -C liblearnix clean
+	$(MAKE) -C userspace clean
 	rm -rf iso_root $(IMAGE_NAME).iso $(IMAGE_NAME).hdd
 
 .PHONY: distclean

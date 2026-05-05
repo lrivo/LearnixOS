@@ -1,3 +1,4 @@
+#include "learnix/mm/vmm.h"
 #include <learnix/cpu.h>
 #include <learnix/lib/string.h>
 #include <learnix/scheduler.h>
@@ -9,8 +10,8 @@ sys_fork(struct intr_trap_frame *tf)
   struct process *parent = arch_cpu_get()->proc;
   struct process *child = proc_create();
 
-  // copy parent's userspace mappings into child->pgdir
-  arch_copyuvm(parent, child);
+  // copy parent's userspace mappings into the child
+  uvm_copy(child->pgtable, parent->pgtable);
   
   // initialize child->tf, the memcpy below will overwrite the
   // trapframe this function sets up 

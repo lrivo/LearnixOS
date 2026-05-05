@@ -64,11 +64,13 @@ sys_execve (struct intr_trap_frame *tf)
     // TODO: all of this can be incapsulated in uvm_map()
     // request a physical page
     vaddr_t pg = P2V (pmm_alloc (PMM_ZERO));
-
-    // TODO: also account for p_memsz for .bss
-    // copy the content
+    
+    // copy the ELF section's bytes into pg
     memcpy ((void *)pg, (void *)elf + phent->p_offset, phent->p_filesz);
-    dbg_hexdump ((void *)pg, 2);
+
+    // if needed, zero out the bss section
+    if (phent->p_memsz > phent->p_filesz)
+      memset((void*)(pg + phent->p_filesz), 0, phent->p_memsz - phent->p_filesz);
 
     // mapping flags
     int flags = VMM_FLAG_USER;
