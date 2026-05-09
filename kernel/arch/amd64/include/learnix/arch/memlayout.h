@@ -18,6 +18,7 @@ extern vaddr_t kernel_virt_base;
 extern paddr_t kernel_phys_base;
 
 /* Known/constant addresses */
+#define USR_STACK 0x7ffffffdd000UL
 #define KERN_SPLIT_START 0xffff800000000000ULL
 
 // TODO: remember to not hardcode this when KASLR will be on

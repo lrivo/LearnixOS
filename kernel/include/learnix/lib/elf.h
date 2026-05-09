@@ -14,6 +14,9 @@ typedef uint64_t elf64_off;
 /* ELF constants */
 #define ELF_MAGIC "\177ELF"
 
+/* ELF errors */
+#define ENOEXEC -2
+
 /* https://docs.oracle.com/cd/E23824_01/html/819-0690/chapter6-43405.html */
 struct elf64_hdr
 {
@@ -83,6 +86,7 @@ struct elf64_phdr
 {
   #define PT_NULL 0 // unused value
   #define PT_LOAD 1 // a loadable segment (execve only cares about this)
+  #define PT_STACK 0x6474e551
   elf64_word p_type;
   
   /* Specifies memory mapping permissions (will overlap). */
@@ -109,3 +113,9 @@ struct elf64_phdr
   /* Specifies page alignment (power of two). */
   elf64_xword p_align;
 };
+
+/* Checks if the given ELF file is a valid one. */
+int elf_validate(struct elf64_hdr *hdr); 
+
+/* Tries to load an ELF image into the given page table root. */
+int elf_load(struct elf64_hdr *hdr, vaddr_t pgdir);

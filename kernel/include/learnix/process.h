@@ -54,6 +54,9 @@ struct process *proc_by_pid (pid_t pid);
 /* Build the initial kernel stack state for a new process */
 void arch_proc_init (struct process *p, vaddr_t user_ip, vaddr_t user_sp);
 
+/* Edits the kernel stack trap frame for execve. */
+void arch_proc_exec (struct process *p, vaddr_t user_ip, vaddr_t user_sp);
+
 /* Does context-switch from prev to next */
 void arch_context_switch (struct process *prev, struct process *next);
 

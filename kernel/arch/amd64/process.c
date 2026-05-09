@@ -72,6 +72,29 @@ arch_proc_init (struct process *p, vaddr_t user_ip, vaddr_t user_sp)
 }
 
 void
+arch_proc_exec(struct process *p, vaddr_t user_ip, vaddr_t user_sp)
+{
+  /* initialize the p->tf pointer */
+  p->tf = (struct intr_trap_frame *)((vaddr_t)p->kstack + KSTACK_SIZE
+                                     - sizeof (struct intr_trap_frame));
+
+  /* we set all registers to 0 on first run */
+  memset ((void *)p->tf, 0x00, sizeof (struct intr_trap_frame));
+
+  /* iretq frame setup */
+  p->tf->rip = user_ip;
+  p->tf->cs = GDT_UCODE | 3;
+  p->tf->rflags = 0x202; // IF (allow ring3->ring0 intr) | BRKI
+  p->tf->rsp = user_sp;
+  p->tf->ss = GDT_UDATA | 3;
+
+  // TODO: this could also go in kernel_exit after call schedule
+  // but for now I'll put it here
+  tss_set_rsp0(p->kstack + KSTACK_SIZE);
+  asm volatile ("mov %0,%%cr3" ::"r"(V2P(p->pgtable)));
+}
+
+void
 arch_context_switch (struct process *prev, struct process *next)
 {
   // switch TSS.rsp0
