@@ -23,5 +23,5 @@ all:
 	llvm-ar rcs liblearnix.a *.o
 
 clean:
-	rm *.o
-	rm *.a
+	rm -f *.o
+	rm -f *.a

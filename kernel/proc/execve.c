@@ -6,12 +6,7 @@
 #include <learnix/lib/string.h>
 #include <learnix/process.h>
 #include <learnix/syscall.h>
-#include <limine.h>
-
-__attribute ((
-    used,
-    section (".limine_requests"))) static volatile struct limine_module_request
-    module_request = { .id = LIMINE_MODULE_REQUEST_ID, .revision = 5 };
+#include <learnix/lib/limine_module.h>
 
 void
 sys_execve (struct intr_trap_frame *tf)
@@ -20,11 +15,9 @@ sys_execve (struct intr_trap_frame *tf)
   vaddr_t uvm = 0;                                  // new page table
   struct process *curr = arch_cpu_get()->proc;      // process that called execve()
   struct elf64_hdr *elf;                            // ELF header
-
-  // TEST: this always loads /boot/hello
-  struct limine_module_response *modules = module_request.response;
-  struct limine_file *file = (struct limine_file *)modules->modules[0];
-  elf = (struct elf64_hdr *)file->address;
+  
+  // get the ELF file
+  elf = (struct elf64_hdr*)limine_module_get((const char*)ARG0(tf));
 
   // validate the ELF program
   ret = elf_validate (elf);

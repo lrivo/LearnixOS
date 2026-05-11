@@ -1,6 +1,8 @@
-# LLVM/clang as the target compiler
+OUT := out
 CC := clang 
 LD := ld.lld 
+
+PROGRAMS := $(filter-out out,$(patsubst %/,%,$(wildcard */)))
 
 # C compilation flags
 CFLAGS := -ffreestanding \
@@ -19,9 +21,20 @@ LDFLAGS := -m elf_x86_64 \
 	-z max-page-size=0x1000 \
 	-T userspace.ld	
 
-all:
-	$(CC) $(CFLAGS) -c hello.c -o hello.c.o
-	$(LD) $(LDFLAGS) hello.c.o ../liblearnix/liblearnix.a -o hello.o
+LDSCRIPT := userspace.ld
+LIBC := ../liblearnix/liblearnix.a
+
+.PHONY: all clean $(PROGRAMS)
+
+all: $(OUT) $(PROGRAMS)
+
+$(OUT):
+	mkdir -p $(OUT)
+
+$(PROGRAMS):
+	$(CC) $(CFLAGS) -c $@/$@.c -o $@/$@.o
+	$(LD) -T $(LDSCRIPT) $@/$@.o $(LIBC) -o $(OUT)/$@
 
 clean:
-	rm *.o
+	rm -rf $(OUT)
+	find . -name "*.o" -delete

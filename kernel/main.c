@@ -1,4 +1,6 @@
 #include "learnix/arch/types.h"
+#include "learnix/lib/elf.h"
+#include "learnix/lib/limine_module.h"
 #include "learnix/scheduler.h"
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
@@ -60,29 +62,6 @@ __attribute__ ((used,
 __attribute__ ((used,
                 section (".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
-
-static void
-test_proc_init (vaddr_t ucode, vaddr_t ustack, vaddr_t exec)
-{
-  struct process *p = proc_create ();
-
-  // copy the exec into the userspace page
-  paddr_t ucode_pf = pmm_alloc (PMM_NONE);
-  memcpy ((void *)P2V (ucode_pf), (void *)exec, 64);
-
-  // map user code as read-only and executable
-  vmm_map (p->pgtable, ucode, ucode_pf, VMM_FLAG_USER | VMM_FLAG_EXEC);
-
-  // map user stack as RW and non executable
-  vmm_map (p->pgtable, ustack, pmm_alloc (PMM_ZERO),
-           VMM_FLAG_USER | VMM_FLAG_WRITE);
-
-  // initialize the process's trap frame
-  arch_proc_init (p, ucode, ustack + PGSIZE);
-
-  // add the process to the runqueue
-  sched_enqueue (p);
-}
 
 // memlayout.h global variables needed for translations
 vaddr_t hhdm_offset, kernel_virt_base;
@@ -159,17 +138,14 @@ kmain (void)
 
   // Initialize the PS/2 keyboard
   ps2kb_init ();
-
-  // TEST: idle process (PID 1)
-  extern void test_ucode (void);
-  extern void test_ucode_sys (void);
-  vaddr_t ucode = 0x400000UL;        // 4MB
-  vaddr_t ustack = 0x7ffffffdd000UL; // bottom of the user stack
-  test_proc_init (ucode, ustack, (vaddr_t)test_ucode_sys);
-
-  for (int i = 0; i < 1; i++)
-    test_proc_init (ucode, ustack, (vaddr_t)test_ucode);
-
+  
+  // Initialize the init process (PID 1)
+  struct process *init = proc_create();
+  struct elf64_hdr *elf = (struct elf64_hdr*)limine_module_get("/boot/init");
+  elf_load(elf, init->pgtable);
+  arch_proc_init(init, elf->e_entry, USR_STACK + PGSIZE);
+  sched_enqueue(init);
+  
   // Done, the kernel idle process will spin here forever
   arch_interrupts_enable ();
   arch_cpu_hcf ();

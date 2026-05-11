@@ -2,12 +2,14 @@
 #include <stddef.h>
 
 #define SYS_WRITE 1
+#define SYS_FORK 57
+#define SYS_EXECVE 59
 #define SYS_EXIT 60
 
 /* SYSCALLS */
 long int write(int fd, char *buf, size_t len);
-void fork(void);
-void execve(const char *path, const char **argv, const char **envp);
+int fork(void);
+int execve(const char *path, const char **argv, const char **envp);
 void exit(size_t code);
 
 // NASM macro that actually does the syscall

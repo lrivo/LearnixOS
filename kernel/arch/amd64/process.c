@@ -27,13 +27,21 @@ pte_extract_flags(pte_t *pte)
   int flags = 0;
 
   if (*pte & PTE_WRITE)
+  {
     flags |= VMM_FLAG_WRITE;
+  }
   if (*pte & PTE_USER)
+  {
     flags |= VMM_FLAG_USER;
+  }
   if (*pte & PTE_GLOBAL)
+  {
     flags |= VMM_FLAG_GLOBAL;
+  }
   if (!(*pte & PTE_NX))
+  {
     flags |= VMM_FLAG_EXEC; 
+  }
 
   return flags;
 }
@@ -157,7 +165,7 @@ arch_uvm_copy_or_destroy(vaddr_t dest, vaddr_t src, bool destroy)
                           PGSIZE);
                   
                     // map va with the same flags of the parent
-                    vmm_map (dest, va, pa_child, pte_extract_flags(pte));
+                    vmm_map (dest, va, pa_child, pte_extract_flags(&pte[z]));
                   }
                 }
               }

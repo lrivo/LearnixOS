@@ -1,26 +1,5 @@
 BITS 64
 
-global test_ucode
-global test_ucode_sys
-
-test_ucode:
-  mov rax, 59
-  syscall
-.l:
-  jmp .l  ; should never return here
-
-test_ucode_sys:
-  mov rax, 1
-  mov rdi, 1
-  lea rsi, [rel msg]
-  mov rdx, 0 
-.loop:
-  mov rax, 1  ; rax contains 21 at this point
-  syscall
-  jmp .loop
-
-msg db "Hello from userspace", 0
-
 ; rdi = struct arch_proc_context *prev 
 ; rsi = struct arch_proc_context *next
 global _switch_to
