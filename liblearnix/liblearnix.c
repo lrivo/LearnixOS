@@ -1,4 +1,5 @@
 #include "include/liblearnix.h"
+#include <stdint.h>
 
 long int
 write(int fd, char *buf, size_t len)
@@ -6,8 +7,14 @@ write(int fd, char *buf, size_t len)
   return (long int)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);
 }
 
+int32_t
+getpid(void)
+{
+  return (int32_t)_do_syscall(SYS_GETPID, 0, 0, 0, 0, 0, 0);
+}
+
 int
-fork()
+fork(void)
 {
   return (int)_do_syscall(SYS_FORK, 0, 0, 0, 0, 0, 0);
 }
