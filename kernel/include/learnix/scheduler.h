@@ -1,6 +1,12 @@
 #pragma once
 #include <learnix/process.h>
 
+struct wait_queue
+{
+  struct process *proc;
+  struct wait_queue *next;
+};
+
 /* Scheduling entrypoint, called before returning from an interrupt
  * if needed. */
 void schedule (void);
@@ -22,3 +28,9 @@ void sched_enqueue (struct process *p);
 
 /* Remove a process from this scheduler's runqueue */
 void sched_dequeue (struct process *p);
+
+/* Puts the current process in the given waitqueue. */
+void sleep_on (struct wait_queue **wq);
+
+/* Awakes the first process of the given waitqueue. */
+void wake_up (struct wait_queue **wq);

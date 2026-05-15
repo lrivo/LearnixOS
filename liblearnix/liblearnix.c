@@ -2,6 +2,12 @@
 #include <stdint.h>
 
 long int
+read(int fd, char *buf, size_t len)
+{
+  return (long int)_do_syscall(SYS_READ, fd, (size_t)buf, len, 0, 0, 0);
+}
+
+long int
 write(int fd, char *buf, size_t len)
 {
   return (long int)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);

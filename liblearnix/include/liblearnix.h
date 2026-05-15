@@ -2,6 +2,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef int64_t ssize_t;
+
+#define SYS_READ 0
 #define SYS_WRITE 1
 #define SYS_GETPID 39
 #define SYS_FORK 57
@@ -9,6 +12,7 @@
 #define SYS_EXIT 60
 
 /* SYSCALLS */
+long int read(int fd, char *buf, size_t len);
 long int write(int fd, char *buf, size_t len);
 int32_t getpid(void);
 int fork(void);

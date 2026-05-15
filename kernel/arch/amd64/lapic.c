@@ -54,7 +54,7 @@ lapic_init ()
   lapic_write_reg (LAPIC_TIMER_LVT, 0x10000);
 
   lapic_write_reg (LAPIC_TIMER_DCR, 0x3);
-  lapic_write_reg (LAPIC_TIMER_ICR, 0xFFFFFFF);
+  lapic_write_reg (LAPIC_TIMER_ICR, 0xFFFFF);
 
   // Enable the LAPIC timer in periodic mode on vector 32
   lapic_write_reg (LAPIC_TIMER_LVT, 0x20 | 0x20000);

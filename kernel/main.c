@@ -16,6 +16,7 @@
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/process.h>
+#include <learnix/tty.h>
 #include <learnix/types.h>
 #include <limine.h>
 
@@ -111,6 +112,9 @@ kmain (void)
   struct console_fb_info fb_info = { framebuffer->address, framebuffer->width,
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
+ 
+  // Initialize the TTY 	
+  tty_init(console_putchar);
 
   // Initialize the virtual memory manager
   vmm_init ();

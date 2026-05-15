@@ -5,6 +5,9 @@
 #include <learnix/io.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/tty.h>
+
+extern struct tty_ctx tty0;
 
 static int break_code = 0;
 
@@ -25,7 +28,7 @@ ps2_handler (struct intr_stack_frame_t *f)
     goto eoi;
 
   if (!break_code)
-    console_putchar (set2_to_ascii[scancode]);
+    tty_line_discipline (&tty0, set2_to_ascii[scancode]);
 
   break_code = 0;
 

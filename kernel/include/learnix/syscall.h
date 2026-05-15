@@ -14,6 +14,7 @@
 void syscall_dispatcher (struct intr_trap_frame *tf);
 
 /* Actual syscalls */
+void sys_read (struct intr_trap_frame *tf);
 void sys_write (struct intr_trap_frame *tf);
 void sys_getpid (struct intr_trap_frame *tf);
 void sys_fork (struct intr_trap_frame *tf);

@@ -1,8 +1,6 @@
 #include <liblearnix.h> 
 
 char msg[] = "Hello from the init process\n";
-char parent[] = "parent\n";
-char child[] = "child\n";
 
 int main()
 {
@@ -12,14 +10,14 @@ int main()
   int pid = fork();
   if (pid == 0)
   {
-    // launch the hello program
-    execve("/boot/hello", 0, 0);
+    // launch the shell program
+    execve("/boot/sh", 0, 0);
   }
   else
   {
-    // parent
+    // parent spin wait
     for (;;)
-      write(1, parent, 8);
+      ;
   }
   
   return 0;

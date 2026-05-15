@@ -4,7 +4,7 @@
 /* PSF2 Font header struct */
 typedef struct
 {
-#define PSF2_MAGIC 0x864ab572
+  #define PSF2_MAGIC 0x864ab572
   uint32_t magic;         /* magic bytes to identify PSF */
   uint32_t version;       /* zero */
   uint32_t headersize;    /* offset of bitmaps in file, 32 */

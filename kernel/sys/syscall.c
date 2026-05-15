@@ -2,6 +2,9 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/scheduler.h>
 #include <learnix/syscall.h>
+#include <learnix/tty.h>
+
+extern struct tty_ctx tty0;
 
 void
 syscall_dispatcher (struct intr_trap_frame *tf)
@@ -9,6 +12,9 @@ syscall_dispatcher (struct intr_trap_frame *tf)
   size_t num = NUM (tf);
   switch (num)
   {
+  case SYS_READ:
+    sys_read (tf);
+    break;
   case SYS_WRITE:
     sys_write (tf);
     break;
@@ -25,11 +31,22 @@ syscall_dispatcher (struct intr_trap_frame *tf)
     sys_exit (tf);
     break;
   default:
-    tf->rax = -1;
+    RET(tf) = -1;
     break;
   }
 }
 
+void
+sys_read (struct intr_trap_frame *tf)
+{
+  char *buf = (char*)ARG1(tf);
+  size_t count = (size_t)ARG2(tf);
+  
+  RET(tf) = tty_read(&tty0, buf, count);
+}
+
+// FIXME: this now works because i am only using it for stdout
+// but it must be refactored to potentially block when I'll have pipes
 void
 sys_write (struct intr_trap_frame *tf)
 {
@@ -41,7 +58,7 @@ sys_write (struct intr_trap_frame *tf)
     kprintf ("%c", buf[i]);
 
   // write() should return the number of written chars
-  tf->rax = count;
+  RET(tf) = count;
 }
 
 /* for now we just mark the current process
