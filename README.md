@@ -5,7 +5,6 @@ This is my Bachelor's thesis project: designing and developing a modular x86_64 
 Please read the documentation [here](docs/README.md).
 
 ## Build
-Just run the following command:
 
 ```bash
 make TOOLCHAIN=llvm ARCH=amd64
