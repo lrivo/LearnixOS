@@ -28,11 +28,14 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     return;
   }
   
-  // regular characters
+  // printable characters
   if (tty->edit_idx < TTY_BUF_LEN - 1)
   {
-    tty->edit_buf[tty->edit_idx++] = c;
-    tty->putchar(c);
+    if (c >= 32 && c < 127)
+    {
+      tty->edit_buf[tty->edit_idx++] = c;
+      tty->putchar(c);
+    }
   }
 }
 

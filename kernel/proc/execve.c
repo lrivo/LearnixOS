@@ -11,7 +11,7 @@
 void
 sys_execve (struct intr_trap_frame *tf)
 {
-  size_t ret;                                       // return code
+  ssize_t ret;                                      // return code
   vaddr_t uvm = 0;                                  // new page table
   struct process *curr = arch_cpu_get()->proc;      // process that called execve()
   struct elf64_hdr *elf;                            // ELF header

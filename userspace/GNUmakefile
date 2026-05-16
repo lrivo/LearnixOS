@@ -5,7 +5,7 @@ LD := ld.lld
 PROGRAMS := $(filter-out out,$(patsubst %/,%,$(wildcard */)))
 
 # C compilation flags
-CFLAGS := -ffreestanding \
+CFLAGS := -ffreestanding -g \
 	-static \
 	-nostdlib \
 	-target x86_64-unknown-none-elf \

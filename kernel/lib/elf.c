@@ -48,6 +48,10 @@ elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
 int
 elf_validate(struct elf64_hdr *hdr)
 {
+  // file not found
+  if (hdr == NULL)
+    return ENOEXEC;
+
   // the first 4 bytes must match ELF_MAGIC
   if (memcmp(hdr->e_ident, ELF_MAGIC, 4) != 0)
     return ENOEXEC;

@@ -1,4 +1,34 @@
 #include <liblearnix.h>
+#include <string.h>
+
+void
+parse_and_execute(const char *buf, size_t n)
+{
+  char cmd[64] = "/boot/";
+
+  // extract the first word
+  for (size_t i = 0; i < n; i++)
+  {
+    if (buf[i] == ' ')
+    {
+      cmd[6+i] = '\0';
+      break;
+    }
+    cmd[6+i] = buf[i];
+  }
+
+  // execute it as a child process
+  int pid = fork();
+  if (pid != 0)
+  {
+    // TODO: parent will waitpid here
+  }
+  else
+  {
+    if (execve(cmd, 0, 0) < 0)
+      write(1, "error\n", 6);
+  }
+}
 
 int main()
 {
@@ -16,8 +46,7 @@ int main()
     // echo back to stdout
     if (n > 0)
     {
-      write(1, "echo: ", 6);
-      write(1, buf, n); 
+      parse_and_execute(buf, n);
     }
   }
 

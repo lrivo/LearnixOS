@@ -36,3 +36,28 @@ exit(size_t code)
 {
   _do_syscall(SYS_EXIT, code, 0, 0, 0, 0, 0);
 }
+
+/* strings.h */
+int
+strcmp(const char *s1, const char *s2)
+{
+  while (*s1 && (*s1 == *s2))
+  {
+    s1++; s2++;
+  }
+  return *(const unsigned char*)s1 - *(const unsigned char*)s2;
+}
+
+void *
+memcpy (void *restrict dest, const void *restrict src, size_t n)
+{
+  asm volatile ("rep movsb" : "+D"(dest), "+S"(src), "+c"(n)::"memory");
+  return dest;
+}
+
+void *
+memset (void *s, int c, size_t n)
+{
+  asm volatile ("rep stosb" ::"D"(s), "a"(c), "c"(n) : "cc", "memory");
+  return s;
+}
