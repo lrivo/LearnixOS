@@ -8,6 +8,7 @@
 #define SYS_FORK 57
 #define SYS_EXECVE 59
 #define SYS_EXIT 60
+#define SYS_WAIT 61
 
 /* This C function gets called by the syscall_entry assembly
  * routine for each HW architecture. */
@@ -20,3 +21,4 @@ void sys_getpid (struct intr_trap_frame *tf);
 void sys_fork (struct intr_trap_frame *tf);
 void sys_execve (struct intr_trap_frame *tf);
 void sys_exit (struct intr_trap_frame *tf);
+void sys_wait (struct intr_trap_frame *tf);

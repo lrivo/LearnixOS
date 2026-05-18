@@ -37,6 +37,12 @@ exit(size_t code)
   _do_syscall(SYS_EXIT, code, 0, 0, 0, 0, 0);
 }
 
+long int
+wait(void)
+{
+  return (long int)_do_syscall(SYS_WAIT, 0, 0, 0, 0, 0, 0);
+}
+
 /* strings.h */
 int
 strcmp(const char *s1, const char *s2)

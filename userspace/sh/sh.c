@@ -9,7 +9,7 @@ parse_and_execute(const char *buf, size_t n)
   // extract the first word
   for (size_t i = 0; i < n; i++)
   {
-    if (buf[i] == ' ')
+    if (buf[i] == ' ' || buf[i] == '\n')
     {
       cmd[6+i] = '\0';
       break;
@@ -21,7 +21,7 @@ parse_and_execute(const char *buf, size_t n)
   int pid = fork();
   if (pid != 0)
   {
-    // TODO: parent will waitpid here
+    wait();
   }
   else
   {

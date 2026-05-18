@@ -30,6 +30,9 @@ syscall_dispatcher (struct intr_trap_frame *tf)
   case SYS_EXIT:
     sys_exit (tf);
     break;
+  case SYS_WAIT:
+    sys_wait(tf);
+    break;
   default:
     RET(tf) = -1;
     break;
@@ -67,11 +70,13 @@ sys_write (struct intr_trap_frame *tf)
 void
 sys_exit (struct intr_trap_frame *tf)
 {
-  (void)tf;
-
-  arch_cpu_get ()->proc->state = ZOMBIE;
+  struct process *proc = arch_cpu_get()->proc;  
+  
+  // we become a ZOMBIE process and we try to wakeup the parent
+  proc->state = ZOMBIE;
+  if (proc->parent != NULL)
+    wake_up(&proc->parent->child_wq);
 
   schedule ();
-
   // will never return here
 }

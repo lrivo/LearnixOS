@@ -6,8 +6,16 @@
 #include <learnix/process.h>
 
 // pid 0 is the fallback process (that is run when no other process exist)
-static struct process *procs[32] = { 0 };
-static pid_t pid_cnt = 1;
+static struct process *procs[PROCS_LEN] = { 0 };
+
+/* returns the first free PID. */
+static inline pid_t get_next_pid()
+{
+  for (pid_t i = 1; i < PROCS_LEN; i++)
+    if (procs[i] == NULL) return i;  
+
+  return -1;
+}
 
 void
 proc_init (void)
@@ -26,7 +34,7 @@ proc_init (void)
 struct process *
 proc_by_pid (pid_t pid)
 {
-  return pid < 32 ? procs[pid] : NULL;
+  return pid < PROCS_LEN ? procs[pid] : NULL;
 }
 
 struct process *
@@ -35,7 +43,7 @@ proc_create (void)
   struct process *p = kzalloc (sizeof (struct process));
 
   // give the process a pid
-  p->pid = pid_cnt++;
+  p->pid = get_next_pid();
   p->state = READY;
 
   // give the process a fresh kernel stack
@@ -54,4 +62,20 @@ proc_create (void)
   procs[p->pid] = p;
 
   return p;
+}
+
+void
+proc_destroy(struct process *p)
+{
+  // free his page table
+  uvm_destroy(p->pgtable);
+
+  // free his kernel stack
+  pmm_unref_pg(V2P(p->kstack));
+  
+  // release his pid
+  procs[p->pid] = NULL;
+
+  // free his PCB
+  kfree(p);
 }

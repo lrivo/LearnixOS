@@ -3,6 +3,7 @@
 #include <learnix/arch/process.h>
 #include <learnix/types.h>
 
+#define PROCS_LEN 64 
 #define KSTACK_SIZE 4096
 
 enum proc_state
@@ -32,6 +33,10 @@ struct process
 
   /* used by arch_switch_to() to context-switch. */
   struct arch_proc_context ctx;
+  
+  /* needed by the wait syscall. */
+  struct process* parent;
+  struct wait_queue *child_wq;
 
   /* scheduling information */
   int priority;

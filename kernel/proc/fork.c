@@ -10,6 +10,8 @@ sys_fork(struct intr_trap_frame *tf)
   struct process *parent = arch_cpu_get()->proc;
   struct process *child = proc_create();
 
+  child->parent = parent;
+
   // copy parent's userspace mappings into the child
   uvm_copy(child->pgtable, parent->pgtable);
   
