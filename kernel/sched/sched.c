@@ -53,7 +53,11 @@ wake_up(struct wait_queue **wq)
     struct wait_queue *tmp = *wq;
     while (tmp)
     {
-      tmp->proc->state = READY;
+      /* without this I had a page fault with RIP=0 when I
+       * CTR+C on a foreground process waiting on a read
+       * syscall. */
+      if (tmp->proc->state != ZOMBIE)
+        tmp->proc->state = READY;
       tmp = tmp->next;
     }
   }

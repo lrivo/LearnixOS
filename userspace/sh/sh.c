@@ -21,10 +21,14 @@ parse_and_execute(const char *buf, size_t n)
   int pid = fork();
   if (pid != 0)
   {
+    // set child as the foreground process
+    set_fg_proc(pid);
+    // wait for child to finish
     wait();
   }
   else
   {
+    set_fg_proc(getpid());
     if (execve(cmd, 0, 0) < 0)
       write(1, "error\n", 6);
   }
@@ -34,7 +38,10 @@ int main()
 {
   char buf[512];
   ssize_t n;
+  int pid = getpid();
   
+  set_fg_proc(pid);
+
   while (1)
   {
     // write prompt to stdout
@@ -42,11 +49,15 @@ int main()
     
     // read user input
     n = read(0, buf, 512);
-   
-    // echo back to stdout
+    
+    // try executing the input
     if (n > 0)
     {
       parse_and_execute(buf, n);
+
+      /* here the child either finishes execution, gets
+       * interrupted (CTR+C) or execve failed. */
+      set_fg_proc(pid);
     }
   }
 

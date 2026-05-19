@@ -14,6 +14,9 @@ struct tty_ctx
 
   // the wait_queue for processes that called read()
   struct wait_queue *read_q; 
+  
+  // foreground process (the one owning the keyboard)
+  struct process *foreground;
 
   // screen driver's putchar function
   void (*putchar)(char c);

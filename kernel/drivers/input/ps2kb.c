@@ -7,32 +7,44 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/tty.h>
 
+// the active tty0 (for now only tty0 exists)
 extern struct tty_ctx tty0;
 
-static int break_code = 0;
+// keyboard status (key pressed)
+static bool break_code = false;
+static bool ctrl = false;
 
-// TODO only handles basic printable chars, no control keys and no extended
-// scancodes
+// TODO: only handles basic printable chars, no control keys and no extended scancodes
 static void
-ps2_handler (struct intr_stack_frame_t *f)
+ps2_handler (struct intr_stack_frame_t *tf)
 {
-  uint8_t scancode = pio_read8 (DATA_PORT);
+  (void)tf;
 
-  if (scancode == 0xF0)
+  // read the set 2 scancode from the data port
+  uint8_t scancode = pio_read8 (DATA_PORT);
+  //kprintf("%u 0x%x\n", (uint32_t)scancode, (uint32_t)scancode);
+  
+  switch (scancode)
   {
-    break_code = 1;
-    goto eoi;
+    // key relase
+    case 0xF0:
+      break_code = true; break;
+    case 0x14:
+      ctrl = !break_code; break;
+    default:
+      char c = set2_to_ascii[scancode];
+      if (ctrl)
+      {
+        if (c == 'c') c = 0x03; // CTR+C
+      }
+      if (!break_code)
+      {
+        tty_line_discipline(&tty0, c);
+      }
+      break_code = false;
+      break;
   }
 
-  if (scancode == 0xE0)
-    goto eoi;
-
-  if (!break_code)
-    tty_line_discipline (&tty0, set2_to_ascii[scancode]);
-
-  break_code = 0;
-
-eoi:
   arch_interrupts_eoi (1);
 }
 

@@ -43,6 +43,12 @@ wait(void)
   return (long int)_do_syscall(SYS_WAIT, 0, 0, 0, 0, 0, 0);
 }
 
+int
+set_fg_proc(uint32_t pid)
+{
+  return (int)_do_syscall(SYS_SET_FG_PROC, pid, 0, 0, 0, 0, 0);
+}
+
 /* strings.h */
 int
 strcmp(const char *s1, const char *s2)

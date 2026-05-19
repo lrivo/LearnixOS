@@ -27,8 +27,14 @@ sched_pick_next (struct process *curr)
 {
   struct rr_node *r = (struct rr_node *)curr->sched_data;
   while (r->next->state != READY)
+  {
     r = (struct rr_node *)r->next->sched_data;
 
+    /* if we re-encounter this process again we've visited
+     * the entire runqueue and found no READY process. */
+    if (r == curr->sched_data)
+      return proc_by_pid(0);  // so we schedule the kernel idle
+  }
   return r->next;
 }
 

@@ -15,9 +15,11 @@ int main()
   }
   else
   {
-    // parent spin wait
-    for (;;)
-      ;
+    // reap zombie childs with no parent
+    while (1)
+    {
+      wait();
+    }
   }
   
   return 0;

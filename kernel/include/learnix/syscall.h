@@ -9,12 +9,13 @@
 #define SYS_EXECVE 59
 #define SYS_EXIT 60
 #define SYS_WAIT 61
+#define SYS_SET_FG_PROC 62
 
 /* This C function gets called by the syscall_entry assembly
  * routine for each HW architecture. */
 void syscall_dispatcher (struct intr_trap_frame *tf);
 
-/* Actual syscalls */
+/* Linux syscalls */
 void sys_read (struct intr_trap_frame *tf);
 void sys_write (struct intr_trap_frame *tf);
 void sys_getpid (struct intr_trap_frame *tf);
@@ -22,3 +23,6 @@ void sys_fork (struct intr_trap_frame *tf);
 void sys_execve (struct intr_trap_frame *tf);
 void sys_exit (struct intr_trap_frame *tf);
 void sys_wait (struct intr_trap_frame *tf);
+
+/* Custom syscalls */
+void sys_set_fg_proc (struct intr_trap_frame *tf);

@@ -1,3 +1,4 @@
+#include <learnix/cpu.h>
 #include <learnix/tty.h>
 #include <learnix/lib/string.h>
 
@@ -28,6 +29,21 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     return;
   }
   
+  // FIXME: CTR+C should send a SIGINT signal to the foreground process
+  // instead of killing it directly
+  if (c == 0x03)
+  {
+    // avoid killig init or the shell process
+    if (tty->foreground->pid > 2)
+    {
+      arch_cpu_get()->proc_need_resched = true;
+      tty->foreground->state = ZOMBIE;
+      if (tty->foreground->parent != NULL)
+        wake_up(&tty->foreground->parent->child_wq);
+    }
+    return;
+  }
+
   // printable characters
   if (tty->edit_idx < TTY_BUF_LEN - 1)
   {
@@ -42,10 +58,11 @@ tty_line_discipline(struct tty_ctx *tty, char c)
 ssize_t
 tty_read(struct tty_ctx *tty, char *buf, size_t count)
 {
-  // wait for a canonical line to be ready (may suspend the caller)
-  if (tty->lines == 0)
+  /* wait untill we are the foreground process and
+   * a canonical line is ready. */
+  while (tty->lines == 0)
     sleep_on(&tty->read_q);
-  
+
   // how much bytes we can copy?
   int n = (tty->edit_idx < count) ? tty->edit_idx : count;
 

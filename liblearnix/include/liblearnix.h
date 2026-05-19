@@ -11,6 +11,7 @@ typedef int64_t ssize_t;
 #define SYS_EXECVE 59
 #define SYS_EXIT 60
 #define SYS_WAIT 61
+#define SYS_SET_FG_PROC 62
 
 /* SYSCALLS */
 long int read(int fd, char *buf, size_t len);
@@ -20,6 +21,7 @@ int fork(void);
 int execve(const char *path, const char **argv, const char **envp);
 void exit(size_t code);
 long int wait(void);
+int set_fg_proc(uint32_t pid);
 
 // NASM macro that actually does the syscall
 extern size_t _do_syscall(size_t number, size_t arg0, size_t arg1, size_t arg2, size_t arg3, size_t arg4, size_t arg5);
