@@ -1,11 +1,3 @@
-/limine
-/edk2-ovmf
-/.cache
-/iso_root
-/userspace/out
-*.a
-*.o
-*.iso
-*.hdd
-*.json
-*.c.swp
+target/
+limine/
+edk2-ovmf/

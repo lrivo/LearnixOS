@@ -2,9 +2,8 @@
 c = 'clang'
 ld = 'ld.lld'
 c_ld = 'lld'
-
-[properties]
-needs_exe_wrapper = true
+nasm = 'nasm'
+objcopy = 'llvm-objcopy'
 
 [host_machine]
 system = 'none'

@@ -1,9 +1,4 @@
-project('learnix-userspace', 'c', version: '0.1')
-
 cc = meson.get_compiler('c')
-
-liblearnix_inc = include_directories('../liblearnix/include')
-liblearnix_dep = cc.find_library('liblearnix', dirs: [meson.current_source_dir() / '../liblearnix'])
 
 userspace_c_args = [
   '-ffreestanding',
@@ -20,6 +15,7 @@ userspace_link_args = [
   '-T', meson.current_source_dir() / 'userspace.ld'
 ]
 
+# userspace programs to build
 subdir('init')
 subdir('sh')
 subdir('echo')
