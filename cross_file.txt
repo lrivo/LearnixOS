@@ -1,0 +1,13 @@
+[binaries]
+c = 'clang'
+ld = 'ld.lld'
+c_ld = 'lld'
+
+[properties]
+needs_exe_wrapper = true
+
+[host_machine]
+system = 'none'
+cpu_family = 'x86_64'
+cpu = 'x86_64'
+endian = 'little'

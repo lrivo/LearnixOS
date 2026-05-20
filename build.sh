@@ -1,3 +1,3 @@
-!#/bin/bash
+#!/bin/bash
 
-make TOOLCHAIN=llvm -j 16
+meson compile -C build_userspace/
