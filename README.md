@@ -5,9 +5,23 @@ This is my Bachelor's thesis project: designing and developing a modular x86_64 
 Please read the documentation [here](docs/README.md).
 
 ## Build
+Make sure to have installed:
+- `clang`
+- `ld.lld`
+- `meson`
+- `ninja`
+- `xorriso`
+- `qemu`
 
+Then you can fetch dependencies and let meson generate the build files:
 ```bash
-make TOOLCHAIN=llvm ARCH=amd64
+./fetch-deps.sh
+./setup.sh
+```
+
+And finally you can compile with:
+```bash
+nina -C target run-uefi
 ```
 
 ## Credits
