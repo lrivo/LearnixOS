@@ -13,15 +13,25 @@ Make sure to have installed:
 - `xorriso`
 - `qemu`
 
-Then you can fetch dependencies and let meson generate the build files:
+After that you must run the `fetch-deps.sh` script:
 ```bash
 ./fetch-deps.sh
-./setup.sh
+```
+
+Now you can setup the meson project with the components of your choice.
+Look into `meson.option` to see what you can do.
+```bash
+meson setup target -Dsched=round_robin -Dpmm=bitmap
+```
+
+If you change idea on the configuration:
+```bash
+meson configure target -Dsched=mlfq
 ```
 
 And finally you can compile with:
 ```bash
-nina -C target run-uefi
+ninja -C target run-uefi
 ```
 
 ## Credits

@@ -1,0 +1,11 @@
+# 1) Scheduler policy (default: round_robin)
+option('sched', type: 'combo',
+  choices: ['round_robin', 'lottery'],
+  value: 'round_robin',
+  description: 'Scheduler policy')
+
+# 2) Physical memory manager (default: bitmap)
+option('pmm', type: 'combo',
+  choices: ['bitmap', 'linked_list'],
+  value: 'bitmap',
+  description: 'Physical memory manager')

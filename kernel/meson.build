@@ -53,7 +53,6 @@ kernel_src = files(
   'lib/kprintf.c',
   'lib/limine_module.c',
   'mm/kmalloc_watermark.c',
-  'mm/pmm_bitmap.c',
   'mm/uvm.c',
   'mm/vmm.c',
   'proc/execve.c',
@@ -62,7 +61,6 @@ kernel_src = files(
   'proc/process.c',
   'proc/wait.c',
   'sched/sched.c',
-  'sched/rr/rr.c',
   'sys/syscall.c',
   'sys/tty.c',
 )
@@ -72,6 +70,17 @@ kernel_include_dirs = [
   include_directories('limine-protocol/include'),
   include_directories('freestnd-c-hdrs/include', is_system:true),
 ]
+
+# === User defined components === #
+if sched == 'round_robin'
+  kernel_src += 'sched/rr/rr.c'
+elif sched == 'lottery'
+  kernel_src += 'sched/lottery/lottery.c'
+endif
+
+if pmm == 'bitmap'
+  kernel_src += 'mm/pmm_bitmap.c'
+endif
 
 # === Architecture Dependent === #
 arch = host_machine.cpu_family()

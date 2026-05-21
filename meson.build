@@ -1,5 +1,9 @@
 project('learnixos', 'c', 'nasm')
 
+# 0. read user selected componets
+sched = get_option('sched')
+pmm = get_option('pmm')
+
 # 1. compile and link the project
 subdir('kernel')
 subdir('liblearnix')
