@@ -19,6 +19,8 @@ sys_wait (struct intr_trap_frame *tf)
       }
       else
       {
+        // remove him from the runqueue
+        sched_dequeue(child);
         // we've found a ZOMBIE child we can free 
         proc_destroy(child);
         // and return his pid to the parent

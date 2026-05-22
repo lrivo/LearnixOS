@@ -1,6 +1,7 @@
 project('learnixos', 'c', 'nasm')
 
 # 0. read user selected componets
+kmalloc = get_option('kmalloc')
 sched = get_option('sched')
 pmm = get_option('pmm')
 

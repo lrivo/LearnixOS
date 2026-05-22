@@ -64,6 +64,7 @@ proc_create (void)
   return p;
 }
 
+// NOTE: the caller has already removed p from the runqueue
 void
 proc_destroy(struct process *p)
 {

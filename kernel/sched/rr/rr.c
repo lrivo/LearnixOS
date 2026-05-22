@@ -55,6 +55,7 @@ sched_enqueue (struct process *p)
 
   new->next = sentinel;
   new->prev = sent->prev; // current tail
+  // BUG: now kfree() works, with the watermark this never triggered
   ((struct rr_node *)new->prev->sched_data)->next = p;
   sent->prev = p;
 

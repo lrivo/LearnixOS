@@ -1,11 +1,23 @@
-# 1) Scheduler policy (default: round_robin)
+#=== Kernel components ===#
 option('sched', type: 'combo',
   choices: ['round_robin', 'lottery'],
   value: 'round_robin',
   description: 'Scheduler policy')
 
-# 2) Physical memory manager (default: bitmap)
 option('pmm', type: 'combo',
   choices: ['bitmap', 'linked_list'],
   value: 'bitmap',
   description: 'Physical memory manager')
+
+option('kmalloc', type: 'combo',
+  choices: [
+    'watermark',  # a bump allocator that can't free
+    'free_list'   # starting point into heap allocators
+  ],
+  value: 'free_list',
+  description: 'Kernel heap manager')
+
+#=== Security mitigations ===#
+option('kpti', type: 'boolean',
+  value: false,
+  description: 'Enables Kernel Page Table Isolation (Meltdown mitigation)')

@@ -52,7 +52,6 @@ kernel_src = files(
   'lib/elf.c',
   'lib/kprintf.c',
   'lib/limine_module.c',
-  'mm/kmalloc_watermark.c',
   'mm/uvm.c',
   'mm/vmm.c',
   'proc/execve.c',
@@ -80,6 +79,12 @@ endif
 
 if pmm == 'bitmap'
   kernel_src += 'mm/pmm_bitmap.c'
+endif
+
+if kmalloc == 'watermark'
+  kernel_src += 'mm/kmalloc_watermark.c'
+elif kmalloc == 'free_list' 
+  kernel_src += 'mm/kmalloc_freelist.c'
 endif
 
 # === Architecture Dependent === #
