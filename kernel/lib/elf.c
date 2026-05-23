@@ -17,7 +17,8 @@ elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
   // zero the bss section
   if (phent->p_memsz > phent->p_filesz)
     memset((void*)pg + phent->p_filesz, 0, phent->p_memsz - phent->p_filesz);
-    
+  
+  // FIXME: see brainfuck bug 23/05/2026
   /* map pg with the section's requested flags.
    * by default this flags means user readable. */
   int flags = VMM_FLAG_USER;

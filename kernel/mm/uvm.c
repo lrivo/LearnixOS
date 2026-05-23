@@ -12,6 +12,11 @@ uvm_alloc()
   // copy kernel mappings
   memcpy((void*)pgtable, (void*)vmm_get_kern_pgtable(), PGSIZE);
 
+  // FIXME: add stack canary
+  vaddr_t fs = P2V(pmm_alloc(PMM_NONE));
+  ((uint64_t*)fs)[5] = 0x595e9fbd94fda766;  // fs[0x28] = canary
+  vmm_map(pgtable, 0x500000, V2P(fs), VMM_FLAG_USER);
+
   return pgtable;
 }
 

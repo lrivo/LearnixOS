@@ -8,6 +8,8 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 
+#include <learnix/syscall.h>
+
 /* Assembly stubs defined in isr_stubs.asm that are registered directly in the
  * IDT and then calls intr_dispatcher after saving registers and pushing the
  * vector number and error code. */
@@ -45,6 +47,8 @@ idt_set_gate (size_t idx, uintptr_t handler, uint16_t selector, uint8_t ist,
   idt[idx].reserved = 0;
 }
 
+/* every time the LAPIC timer interrupt fires we ask the
+ * scheduler what to do. */
 static void
 handler_timer (struct intr_trap_frame *tf)
 {
@@ -56,6 +60,15 @@ static void
 handler_page_fault (struct intr_trap_frame *tf)
 {
   vaddr_t fault;
+  
+  // if userspace generated the fault kill the process
+  if (tf->cs & 3)
+  {
+    kprintf("PAGE FAULT: process terminated\n");
+    sys_exit(tf); // NOTE: this is not "killing" properly as I do not have UNIX signals
+  }
+  
+  // otherwise it was a ring 0 fault
   asm volatile ("mov %%cr2,%0" : "=r"(fault));
   kpanic ("[ PAGE FAULT ]\nRIP: %lx\nRSP: %lx\nError Code: %lx\nCR2: %p\n",
           tf->rip, tf->rsp, tf->error, fault);

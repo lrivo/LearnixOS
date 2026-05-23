@@ -73,3 +73,13 @@ memset (void *s, int c, size_t n)
   asm volatile ("rep stosb" ::"D"(s), "a"(c), "c"(n) : "cc", "memory");
   return s;
 }
+
+/* stack canaries */
+
+/* this is the function called when the canary is overwritten */
+__attribute__((noreturn))
+void __stack_chk_fail(void)
+{
+  write(1, "stack smashing detected\n", 24); 
+  exit(-1);
+}

@@ -2,8 +2,7 @@
 
 int main()
 {
-  for (int i = 0; i < 10; i++)
-    write(1, "Hello\n", 6);
-
+  char buffer[8];
+  read(0, buffer, 64);
   return 0;
 }

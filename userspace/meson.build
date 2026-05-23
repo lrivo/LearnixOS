@@ -3,7 +3,7 @@ cc = meson.get_compiler('c')
 userspace_c_args = [
   '-ffreestanding',
   '-nostdlib',
-  '-fno-stack-protector',
+  '-fstack-protector',  # enables stack canaries
   '-fno-PIC',
   '-mno-red-zone',
 ]

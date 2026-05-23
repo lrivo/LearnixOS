@@ -35,6 +35,9 @@ arch_stage_2 ()
 {
   lapic_init ();
   ioapic_init ();
+  
+  // FIXME: setup FS at this address for every process
+  wrmsr (0xC0000100, (uint64_t)0x500000);
 
   // setup per-core struct
   struct cpu *cpu = (struct cpu *)kzalloc (sizeof (struct cpu));
