@@ -15,4 +15,11 @@ SECTIONS
     
     . = ALIGN(0x1000);
     .bss : { *(.bss) }
+    
+    /DISCARD/ : {
+        *(.note.gnu.*)
+        *(.comment)
+        *(.eh_frame*)
+    }
 }
+

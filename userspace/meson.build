@@ -1,11 +1,9 @@
 cc = meson.get_compiler('c')
 
-# C files that must be compiled by all userspace programs
-userspace_files = cc_runtime_dep
-
 userspace_c_args = [
   '-ffreestanding',
   '-nostdlib',
+  '-nostdinc',
   '-fstack-protector',  # enables stack canaries
   '-fno-PIC',
   '-mno-red-zone',
@@ -13,6 +11,7 @@ userspace_c_args = [
 
 userspace_link_args = [
   '-nostdlib',
+  '-nostdinc',
   '-static',
   '-z', 'max-page-size=0x1000',
   '-T', meson.current_source_dir() / 'userspace.ld'

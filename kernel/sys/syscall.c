@@ -1,5 +1,6 @@
 #include <learnix/cpu.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/lib/kpanic.h>
 #include <learnix/scheduler.h>
 #include <learnix/syscall.h>
 #include <learnix/tty.h>
@@ -74,6 +75,10 @@ void
 sys_exit (struct intr_trap_frame *tf)
 {
   struct process *proc = arch_cpu_get()->proc;  
+
+  // can't exit idle and init processes
+  if (proc->pid <= 1)
+    kpanic("init process can't exit\n");
 
   // now we become a zombie and wakeup the parent
   proc->state = ZOMBIE;

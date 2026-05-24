@@ -64,7 +64,7 @@ handler_page_fault (struct intr_trap_frame *tf)
   // if userspace generated the fault kill the process
   if (tf->cs & 3)
   {
-    kprintf("PAGE FAULT: process terminated\n");
+    kprintf("PAGE FAULT: process terminated with error %lx\n", tf->error);
     sys_exit(tf); // NOTE: this is not "killing" properly as I do not have UNIX signals
   }
   

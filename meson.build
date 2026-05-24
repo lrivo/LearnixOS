@@ -63,3 +63,20 @@ run_target('run-uefi',
   ],
   depends: iso_target
 )
+
+
+run_target('gdb',
+  command: [
+    qemu,
+    '-M', 'q35',
+    '-drive', 'if=pflash,unit=0,format=raw,file=' + meson.project_source_root() / 'deps/edk2-ovmf/ovmf-code-x86_64.fd,readonly=on',
+    '-cdrom', iso_target,
+    '-boot', 'd',
+    '-no-reboot', 
+    '-no-shutdown',
+    '-m', '2G',
+    '-d', 'cpu_reset',
+    '-s', '-S',
+  ],
+  depends: iso_target
+)
