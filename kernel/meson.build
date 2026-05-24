@@ -41,7 +41,6 @@ kernel_link_args = [
 ]
 
 kernel_src = files(
-  'cc-runtime/src/cc-runtime.c',
   'main.c',
   'kpanic.c',
   'acpi/acpi.c',
@@ -63,11 +62,12 @@ kernel_src = files(
   'sys/syscall.c',
   'sys/tty.c',
 )
+kernel_src += cc_runtime_dep
 
 kernel_include_dirs = [
   include_directories('include'),
-  include_directories('limine-protocol/include'),
-  include_directories('freestnd-c-hdrs/include', is_system:true),
+  freestnd_hdrs_dep,
+  limine_hdrs_dep,
 ]
 
 # === User defined components === #

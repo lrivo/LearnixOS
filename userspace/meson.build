@@ -1,5 +1,8 @@
 cc = meson.get_compiler('c')
 
+# C files that must be compiled by all userspace programs
+userspace_files = cc_runtime_dep
+
 userspace_c_args = [
   '-ffreestanding',
   '-nostdlib',

@@ -1,6 +1,7 @@
 liblearnix_c_args = [
   '-ffreestanding',
   '-nostdlib',
+  '-nostdinc',
   '-fno-omit-frame-pointer',
   '-fno-stack-protector',
   '-fno-PIC',
@@ -16,16 +17,20 @@ liblearnix_src = files(
   'liblearnix.c',
   'liblearnix.asm',
 )
+liblearnix_src += cc_runtime_dep
 
 # output: liblearnix.a
 liblearnix_ar = static_library(
   'liblearnix',
   liblearnix_src,
   c_args: liblearnix_c_args,
-  nasm_args: liblearnix_nasm_args
+  nasm_args: liblearnix_nasm_args,
+  include_directories: freestnd_hdrs_dep,
 )
 
+# this is the dependency included by userspace programs
+# they automatically inherit cc-runtime and freestnd-c-hdrs
 liblearnix_dep = declare_dependency(
   link_with: liblearnix_ar,
-  include_directories: include_directories('include')
+  include_directories: [include_directories('include'), freestnd_hdrs_dep]
 )

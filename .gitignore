@@ -1,3 +1,4 @@
 target/
 limine/
 edk2-ovmf/
+deps/

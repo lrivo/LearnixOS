@@ -21,12 +21,12 @@ for input_file in "$@"; do
 done
 
 # Copy Limine config and assets
-cp -v "$SOURCE_ROOT/limine.conf"              "$ISO_DIR/boot/limine/"
-cp -v "$SOURCE_ROOT/limine/limine-bios.sys"   "$ISO_DIR/boot/limine/"
-cp -v "$SOURCE_ROOT/limine/limine-bios-cd.bin" "$ISO_DIR/boot/limine/"
-cp -v "$SOURCE_ROOT/limine/limine-uefi-cd.bin" "$ISO_DIR/boot/limine/"
-cp -v "$SOURCE_ROOT/limine/BOOTX64.EFI"       "$ISO_DIR/EFI/BOOT/"
-cp -v "$SOURCE_ROOT/limine/BOOTIA32.EFI"       "$ISO_DIR/EFI/BOOT/"
+cp -v "$SOURCE_ROOT/limine.conf"                    "$ISO_DIR/boot/limine/"
+cp -v "$SOURCE_ROOT/deps/limine/limine-bios.sys"    "$ISO_DIR/boot/limine/"
+cp -v "$SOURCE_ROOT/deps/limine/limine-bios-cd.bin" "$ISO_DIR/boot/limine/"
+cp -v "$SOURCE_ROOT/deps/limine/limine-uefi-cd.bin" "$ISO_DIR/boot/limine/"
+cp -v "$SOURCE_ROOT/deps/limine/BOOTX64.EFI"        "$ISO_DIR/EFI/BOOT/"
+cp -v "$SOURCE_ROOT/deps/limine/BOOTIA32.EFI"       "$ISO_DIR/EFI/BOOT/"
 
 # Build the ISO
 "$XORRISO" -as mkisofs \

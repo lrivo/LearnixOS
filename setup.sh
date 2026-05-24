@@ -1,4 +1,4 @@
 #!/bin/bash
 
-rm -rf target/
-meson setup target --cross-file cross_file.txt
+rm -rf build/
+meson setup build/ --cross-file cross_file.txt

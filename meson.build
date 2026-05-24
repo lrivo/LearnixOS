@@ -1,18 +1,23 @@
 project('learnixos', 'c', 'nasm')
 
-# 0. read user selected componets
+# 0. make sure dependencies are installed
+cc_runtime_dep = files('deps/cc-runtime/src/cc-runtime.c')
+freestnd_hdrs_dep  = include_directories('deps/freestnd-c-hdrs/include/', is_system:true)
+limine_hdrs_dep = include_directories('deps/limine-protocol/include/')
+
+# 1. read user selected componets
 kmalloc = get_option('kmalloc')
 sched = get_option('sched')
 pmm = get_option('pmm')
 
-# 1. compile and link the project
+# 2. compile and link the project
 subdir('kernel')
 subdir('liblearnix')
 subdir('userspace')
 
-# 2. construct the bootable iso
+# 3. construct the bootable iso
 xorriso = find_program('xorriso')
-limine = find_program('limine/limine')
+limine = find_program('deps/limine/limine')
 
 iso_deps = [
   kernel_elf,
@@ -41,14 +46,14 @@ iso_target = custom_target(
   build_by_default: true
 )
 
-# 3. run targets
+# 4. launch QEMU
 qemu = find_program('qemu-system-x86_64')
 
 run_target('run-uefi',
   command: [
     qemu,
     '-M', 'q35',
-    '-drive', 'if=pflash,unit=0,format=raw,file=' + meson.project_source_root() / 'edk2-ovmf/ovmf-code-x86_64.fd,readonly=on',
+    '-drive', 'if=pflash,unit=0,format=raw,file=' + meson.project_source_root() / 'deps/edk2-ovmf/ovmf-code-x86_64.fd,readonly=on',
     '-cdrom', iso_target,
     '-boot', 'd',
     '-no-reboot', 
