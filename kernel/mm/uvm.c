@@ -1,6 +1,7 @@
 #include <learnix/mm/vmm.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/lib/string.h>
+#include <learnix/security/canary.h>
 #include <learnix/arch/memlayout.h>
 
 vaddr_t
@@ -11,10 +12,10 @@ uvm_alloc()
 
   // copy kernel mappings
   memcpy((void*)pgtable, (void*)vmm_get_kern_pgtable(), PGSIZE);
-
-  // FIXME: add stack canary
+  
+  // SECURITY: stack canary
   vaddr_t fs = P2V(pmm_alloc(PMM_NONE));
-  ((uint64_t*)fs)[5] = 0x595e9fbd94fda766;  // fs[0x28] = canary
+  canary_generate(fs+0x28);
   vmm_map(pgtable, 0x500000, V2P(fs), VMM_FLAG_USER);
 
   return pgtable;

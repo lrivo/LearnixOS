@@ -50,6 +50,7 @@ kernel_src = files(
   'lib/debug.c',
   'lib/elf.c',
   'lib/kprintf.c',
+  'lib/rand.c',
   'lib/limine_module.c',
   'mm/uvm.c',
   'mm/vmm.c',
@@ -61,6 +62,7 @@ kernel_src = files(
   'sched/sched.c',
   'sys/syscall.c',
   'sys/tty.c',
+  'security/canary.c',
 )
 kernel_src += cc_runtime_dep
 

@@ -8,6 +8,7 @@
 
 # Improvements
 - elf_load() implicitly assumes all section are 4KB
+- elf_load() does not check if a section is mapped in a page of another previous section (brainfuck bug)
 
 # Security
 - [x] stack canaries in userspace
@@ -15,5 +16,5 @@
 - KASLR (enable in Limine and compile kernel as PIC)
 
 # Bugs
-- userspace/brainfuck immediately kernel panics
-    - caused by the ELF re-mapping the same page as read only due to his ELF file
+- [x] userspace/brainfuck immediately kernel panics
+    - FIXED by discarding .gnu.note.* sections at linker level

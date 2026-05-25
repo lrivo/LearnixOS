@@ -1,6 +1,7 @@
 #include "learnix/arch/types.h"
 #include "learnix/lib/elf.h"
 #include "learnix/lib/limine_module.h"
+#include <learnix/lib/rand.h>
 #include "learnix/scheduler.h"
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
@@ -121,6 +122,9 @@ kmain (void)
 
   // Essential CPU initialization like exception handlers
   arch_stage_1 ();
+
+  // Seed the (C)SPRNG
+  rand_init();
 
   // ACPI parsing
   acpi_init ();

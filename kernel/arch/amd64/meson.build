@@ -11,7 +11,8 @@ amd64_src = files(
   'process.asm',
   'process.c',
   'string.c',
-  'syscall.asm'
+  'syscall.asm',
+  'rdseed.asm',
 )
 
 # Architecture specific compilation/linker arguments

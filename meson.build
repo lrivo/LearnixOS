@@ -59,7 +59,9 @@ run_target('run-uefi',
     '-no-reboot', 
     '-no-shutdown',
     '-m', '2G',
-    '-d', 'cpu_reset'
+    '-d', 'cpu_reset',
+    '-cpu', 'host',
+    '--enable-kvm',
   ],
   depends: iso_target
 )
