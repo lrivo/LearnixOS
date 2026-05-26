@@ -8,6 +8,7 @@ limine_hdrs_dep = include_directories('deps/limine-protocol/include/')
 # 1. read user selected componets
 kmalloc = get_option('kmalloc')
 sched = get_option('sched')
+rand = get_option('rand')
 pmm = get_option('pmm')
 
 # 2. compile and link the project
@@ -49,7 +50,7 @@ iso_target = custom_target(
 # 4. launch QEMU
 qemu = find_program('qemu-system-x86_64')
 
-run_target('run-uefi',
+run_target('run',
   command: [
     qemu,
     '-M', 'q35',
@@ -60,8 +61,7 @@ run_target('run-uefi',
     '-no-shutdown',
     '-m', '2G',
     '-d', 'cpu_reset',
-    '-cpu', 'host',
-    '--enable-kvm',
+    '-cpu', 'qemu64,+rdrand,+rdseed',
   ],
   depends: iso_target
 )
@@ -78,6 +78,7 @@ run_target('gdb',
     '-no-shutdown',
     '-m', '2G',
     '-d', 'cpu_reset',
+    '-cpu', 'qemu64,+rdrand,+rdseed',
     '-s', '-S',
   ],
   depends: iso_target

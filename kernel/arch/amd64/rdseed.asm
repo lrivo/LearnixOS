@@ -1,10 +1,9 @@
 BITS 64
 section .text
 
-; rdi: uint8_t *vec
-; rsi: size_t n
-global arch_rand_bytes
-arch_rand_bytes:
+; rdi: uint64_t *out 
+global rdseed_u64 
+rdseed_u64:
   ; rax: RDSEED ouput
   ; rcx: RDSEED number of reties
   
@@ -12,16 +11,16 @@ arch_rand_bytes:
   ; we allow 100 tries before giving up
   mov rcx, 100
 .retry:
-  rdrand rax    ; generate a 64 bit random number
+  rdseed rax    ; generate a 64 bit random number
   jc .done      ; if CF=1 we have a valid number
-  test rcx, 0   ; if CF=0 check if we have tries left 
-  je .fail
-  sub rcx, 1
+  dec rcx       ; rcx -= 1
+  jz .fail      ; if rcx hits 0 we've failed
+  pause
+  jmp .retry    ; otherwise we can retry
 .fail:
   mov rax, -1   ; return error to caller
   ret
 .done:
-  ; TODO: byte by byte copy into rdi
-  mov [rdi], rax
-  mov rax, 0
+  mov [rdi], rax  ; copy rdseed's output
+  mov rax, 0      ; no error
   ret

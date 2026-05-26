@@ -50,7 +50,6 @@ kernel_src = files(
   'lib/debug.c',
   'lib/elf.c',
   'lib/kprintf.c',
-  'lib/rand.c',
   'lib/limine_module.c',
   'mm/uvm.c',
   'mm/vmm.c',
@@ -87,6 +86,10 @@ if kmalloc == 'watermark'
   kernel_src += 'mm/kmalloc_watermark.c'
 elif kmalloc == 'free_list' 
   kernel_src += 'mm/kmalloc_freelist.c'
+endif
+
+if rand == 'chacha20'
+  kernel_src += 'security/chacha20.c'
 endif
 
 # === Architecture Dependent === #

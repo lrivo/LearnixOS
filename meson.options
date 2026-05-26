@@ -17,6 +17,14 @@ option('kmalloc', type: 'combo',
   value: 'free_list',
   description: 'Kernel heap manager')
 
+
+option('rand', type: 'combo',
+  choices: [
+    'chacha20',
+  ],
+  value: 'chacha20',
+  description: 'Random number generator')
+
 #=== Security mitigations ===#
 option('kpti', type: 'boolean',
   value: false,

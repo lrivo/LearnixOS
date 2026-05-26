@@ -16,7 +16,7 @@ uvm_alloc()
   // SECURITY: stack canary
   vaddr_t fs = P2V(pmm_alloc(PMM_NONE));
   canary_generate(fs+0x28);
-  vmm_map(pgtable, 0x500000, V2P(fs), VMM_FLAG_USER);
+  vmm_map(pgtable, 0x300000, V2P(fs), VMM_FLAG_USER);
 
   return pgtable;
 }
