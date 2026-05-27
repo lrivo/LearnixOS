@@ -34,6 +34,9 @@ sleep_on(struct wait_queue **wq)
  
   // linked list head insertion 
   *wq = &w; 
+  
+  // remove him from the runqueue
+  sched_dequeue(curr);
 
   // yield the CPU
   schedule();
@@ -57,7 +60,10 @@ wake_up(struct wait_queue **wq)
        * CTR+C on a foreground process waiting on a read
        * syscall. */
       if (tmp->proc->state != ZOMBIE)
+      {
         tmp->proc->state = READY;
+        sched_enqueue(tmp->proc);
+      }
       tmp = tmp->next;
     }
   }

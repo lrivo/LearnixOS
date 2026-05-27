@@ -36,11 +36,18 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     // avoid killig init or the shell process
     if (tty->foreground->pid > 2)
     {
-      arch_cpu_get()->proc_need_resched = true;
+      // FIXME: do a proc_exit() function that both sys_exit and this
+      // can call to safely update state
       tty->foreground->state = ZOMBIE;
+      sched_dequeue(tty->foreground);
       if (tty->foreground->parent != NULL)
         wake_up(&tty->foreground->parent->child_wq);
+      arch_cpu_get()->proc_need_resched = true;
     }
+
+    // discard everything
+    tty->edit_idx = 0;
+    tty->lines = 0;
     return;
   }
 

@@ -83,6 +83,10 @@ sys_exit (struct intr_trap_frame *tf)
   // now we become a zombie and wakeup the parent
   proc->state = ZOMBIE;
   wake_up(&proc->parent->child_wq);
+  
+  /* try to remove ourself from the runqueue.
+   * Will fail if we're not alredy in. */
+  sched_dequeue(proc);
 
   schedule ();
   

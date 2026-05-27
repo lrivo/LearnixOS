@@ -38,9 +38,11 @@ struct process
   struct process* parent;
   struct wait_queue *child_wq;
 
-  /* scheduling information */
-  int priority;
-  void *sched_data;
+  /* scheduling */
+  ssize_t priority;
+  /* doubly-linked list runqueue */
+  struct process *next;
+  struct process *prev;
 };
 
 /* Initializes the idle kernel process (the first one) */

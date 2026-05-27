@@ -1,6 +1,6 @@
-#include "rr.h"
 #include "learnix/process.h"
 #include <learnix/cpu.h>
+#include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
@@ -11,68 +11,55 @@ void
 sched_init ()
 {
   // we use the kernel idle process as the sentinel node
-  sentinel = proc_by_pid (0);
-  sentinel->sched_data = kmalloc (sizeof (struct rr_node));
-  ((struct rr_node *)sentinel->sched_data)->prev = sentinel;
-  ((struct rr_node *)sentinel->sched_data)->next = sentinel;
+  sentinel = proc_by_pid(0);
+  sentinel->prev = sentinel->next = sentinel;
 
   /* pretend the kernel idle process was running and immediately
    * needs to be rescheduled */
-  arch_cpu_get ()->proc = sentinel;
-  arch_cpu_get ()->proc_need_resched = true;
+  arch_cpu_get()->proc = sentinel;
+  arch_cpu_get()->proc_need_resched = true;
+
+  kprintf("[INFO] round robin scheduler ready\n");
 }
 
 struct process *
 sched_pick_next (struct process *curr)
 {
-  struct rr_node *r = (struct rr_node *)curr->sched_data;
-  while (r->next->state != READY)
+  struct process *p = curr;
+  while (p->next->state != READY)
   {
-    r = (struct rr_node *)r->next->sched_data;
+    p = p->next;
 
     /* if we re-encounter this process again we've visited
      * the entire runqueue and found no READY process. */
-    if (r == curr->sched_data)
-      return proc_by_pid(0);  // so we schedule the kernel idle
+    if (p == curr)
+      return sentinel;  // so we schedule the kernel idle
   }
-  return r->next;
+  return p->next;
 }
 
 void
 sched_tick (void)
 {
-  arch_cpu_get ()->proc_need_resched = true;
+  arch_cpu_get()->proc_need_resched = true;
 }
 
 void
 sched_enqueue (struct process *p)
 {
-  // p must not be in the runqueue
-  kassert (p != NULL && p != sentinel && p->sched_data == NULL);
-
-  struct rr_node *new = kmalloc (sizeof (struct rr_node));
-  struct rr_node *sent = (struct rr_node *)sentinel->sched_data;
-
-  new->next = sentinel;
-  new->prev = sent->prev; // current tail
-  // BUG: now kfree() works, with the watermark this never triggered
-  ((struct rr_node *)new->prev->sched_data)->next = p;
-  sent->prev = p;
-
-  p->sched_data = (void *)new;
+  kassert (p != NULL && p != sentinel);
+  
+  p->next = sentinel;
+  p->prev = sentinel->prev;
+  p->prev->next = p;
+  sentinel->prev = p;
 }
 
 void
 sched_dequeue (struct process *p)
 {
-  // p must be in the runqueue
-  kassert (p != NULL && p != sentinel && p->sched_data != NULL);
-
-  struct rr_node *curr = (struct rr_node *)p->sched_data;
-
-  ((struct rr_node *)curr->prev->sched_data)->next = curr->next;
-  ((struct rr_node *)curr->next->sched_data)->prev = curr->prev;
-
-  kfree (curr);
-  p->sched_data = NULL;
+  if (!p || p == sentinel) return;
+  
+  p->prev->next = p->next;
+  p->next->prev = p->prev;
 }

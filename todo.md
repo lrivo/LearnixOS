@@ -1,6 +1,6 @@
 # Features
 - [x] extend the build system to support swappable components (scheduler, pmm, kmalloc)
-- random number generator
+- [x] ChaCha20 CSPRNG
 - add file descriptors
 - pipe() syscall
 - mmap() syscall
@@ -18,3 +18,5 @@
 # Bugs
 - [x] userspace/brainfuck immediately kernel panics
     - FIXED by discarding .gnu.note.* sections at linker level
+- [ ] weird CTRL+C problems
+    - reproduce: echo "type" echo CTR+C echo <keyboard freeze>

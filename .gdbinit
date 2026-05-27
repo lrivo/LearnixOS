@@ -1,2 +1,2 @@
-file target/kernel/kernel.elf 
+file build/kernel/kernel.elf 
 target remote localhost:1234
