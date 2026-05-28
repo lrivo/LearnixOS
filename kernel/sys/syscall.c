@@ -19,6 +19,12 @@ syscall_dispatcher (struct intr_trap_frame *tf)
   case SYS_WRITE:
     sys_write (tf);
     break;
+  case SYS_MMAP:
+    sys_mmap(tf);
+    break;
+  case SYS_MUNMAP:
+    sys_munmap(tf);
+    break;
   case SYS_GETPID:
     sys_getpid (tf);
     break;

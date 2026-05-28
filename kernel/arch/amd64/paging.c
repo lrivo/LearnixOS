@@ -169,6 +169,10 @@ arch_va_to_pa (vaddr_t pgtable, vaddr_t va)
 {
   // walk the page table without allocating not present intermediate levels
   pte_t *pte = pgdirwalk ((pml4_t *)pgtable, va, 0, NULL, NULL);
-
-  return pte ? (*pte & PTE_PA_MASK) + (va & 0xFFF) : 0;
+  
+  /* pgdirwalk only clears the present bit, so we need to check for it
+     otherwhise this function still returns != 0 from a non present page. */
+  if (pte)
+    return *pte & PTE_PRESENT ? (*pte & PTE_PA_MASK) + (va & 0xFFF) : 0;
+  return 0;
 }

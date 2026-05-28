@@ -13,6 +13,18 @@ write(int fd, char *buf, size_t len)
   return (long int)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);
 }
 
+void*
+mmap(void *addr, size_t length, int prot, int flags)
+{
+  return (void*)_do_syscall(SYS_MMAP, (size_t)addr, length, (size_t)prot, (size_t)flags, 0, 0);
+}
+
+int
+munmap(void *addr, size_t length)
+{
+  return (int)_do_syscall(SYS_MUNMAP, (size_t)addr, length, 0, 0, 0, 0);
+}
+
 int32_t
 getpid(void)
 {

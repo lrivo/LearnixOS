@@ -2,8 +2,9 @@
 - [x] extend the build system to support swappable components (scheduler, pmm, kmalloc)
 - [x] ChaCha20 CSPRNG
 - add file descriptors
-- pipe() syscall
-- mmap() syscall
+  - pipe() syscall
+- [x] mmap() syscall
+  - [x] munmap() syscall
 - linked-list based PMM
 
 # Improvements

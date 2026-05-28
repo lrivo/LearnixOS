@@ -57,3 +57,9 @@ vmm_get_kern_pgtable(void)
 {
   return kern_pgtable;
 }
+
+vaddr_t
+vmm_get_pgtable(void)
+{
+  return arch_get_pgtable();
+}
