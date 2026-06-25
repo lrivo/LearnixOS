@@ -15,6 +15,8 @@ Learnix is designed to swap and test different components at compile time, for n
 
 ## Subsystems
 Here you'll find detailed documentation about individual subsystems:
+- [mm/ - Memory Management](../kernel/mm/README.md)
+- [proc/ - Processes](../kernel/proc/README.md)
 - [sched/ - Scheduler](../kernel/sched/README.md)
 
 ## References

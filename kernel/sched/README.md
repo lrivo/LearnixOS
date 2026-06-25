@@ -25,7 +25,7 @@ Different computing workloads demand to maximise different scheduling metrics, f
 - a desktop OS wants minimum response time at the expense of throughput
 - a server wants maximum throughput and doesn't really care about response time
 
-## Learnix Implementation
+## Learnix's Implementation
 Learnix employs a strict separation between:
 - **mechanism**: how to switch between processes, implemented by `schedule()`
 - **policy**: how to decide who and when to switch, implemented by each algorithm in `sched_pick_next()` and `sched_tick()`
@@ -33,18 +33,17 @@ Learnix employs a strict separation between:
 Just before popping the saved general purpose registers when returning from an interrupt we check if the current process's has the `PROC_NEED_RESCHED` flag set (equivalent to Linux's `TIF_NEED_RESCHED`).
 If so we call `schedule()` to pick the next process that should be run and then we context switch to it by calling `arch_context_switch()`. 
 
+### Interface
+Those are the functions that you need to implement for a new scheduling algorithm:
+- `sched_init()`: use this to allocate internal data structures and to define the initial state of the algorithm
+- `sched_tick()`: let's you define what to do when a timer interrupt fires
+- `sched_insert_proc()`: add a process to the runqueue
+- `sched_remove_proc()`: remove a process from the runqueue
+- `sched_pick_next()`: called by `schedule()`, returns the next process that should run
+
+Have a look at the already supported ones in the next section also.
+
 ### Already supported algorithms
 The Learnix kernel already implemnts the following scheduling algorithms:
 - [Round Robin](rr/README.md)
-
-### Adding new ones
-To add a new scheduling algorithm to the Learnix kernel you need to:
-1. create his folder under `sched/...`
-2. under his folder add a C file for the implementation that must include `learnix/scheduler.h`
-3. implement all the policy functions
-    - `sched_init()`: for allocating internal data structures
-    - `sched_tick()`: what to to at every timer interrupt
-    - `sched_pick_next()`: select which process should run next
-    - `sched_insert_proc()`: add a process to the runqueue
-    - `sched_remove_proc()`: remove a process from the runqueue
-4. TODO, select him as the active one in the build system
+- [Lottery](lottery/README.md)
