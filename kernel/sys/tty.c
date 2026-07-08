@@ -1,6 +1,11 @@
 #include <learnix/cpu.h>
 #include <learnix/tty.h>
+#include <learnix/fs.h>
 #include <learnix/lib/string.h>
+#include <learnix/lib/kprintf.h>
+
+struct file tty_file = { 0 };
+struct file_ops tty_ops = { 0 };
 
 // the global tty always in canonical mode
 struct tty_ctx tty0 = { 0 };
@@ -8,6 +13,18 @@ struct tty_ctx tty0 = { 0 };
 void
 tty_init(void (*putchar)(char c))
 {
+  // fill the TTY file's vtable
+  tty_ops.read = tty_read;
+  tty_ops.write = tty_write;
+
+  // initialize the TTY file
+  tty_file.ptr = &tty0;
+  tty_file.ops = &tty_ops;
+
+  kprintf("%p\n", tty_file.ops);
+  kprintf("%p\n", tty_file.ops->read);
+  kprintf("%p\n", tty_file.ops->write);
+
   // just setup tty0's putchar function pointer
   tty0.putchar = putchar;
 }
@@ -50,8 +67,8 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     tty->lines = 0;
     return;
   }
-
-  // printable characters
+  
+  /* Echo printable chars on screen (to see what you type) */
   if (tty->edit_idx < TTY_BUF_LEN - 1)
   {
     if (c >= 32 && c < 127)
@@ -63,8 +80,10 @@ tty_line_discipline(struct tty_ctx *tty, char c)
 }
 
 ssize_t
-tty_read(struct tty_ctx *tty, char *buf, size_t count)
+tty_read(struct file *f, void *buf, size_t count)
 {
+  struct tty_ctx *tty = (struct tty_ctx*)f->ptr;
+
   /* wait untill we are the foreground process and
    * a canonical line is ready. */
   while (tty->lines == 0)
@@ -81,4 +100,16 @@ tty_read(struct tty_ctx *tty, char *buf, size_t count)
   tty->lines = 0;
 
   return n;
+}
+
+ssize_t
+tty_write(struct file *f, void *buf, size_t count)
+{
+  struct tty_ctx *tty = (struct tty_ctx*)f->ptr;
+  const char *buff = (char*)buf;
+
+  for (size_t i = 0; i < count; i++)
+    tty->putchar(buff[i]);
+       
+  return count;
 }

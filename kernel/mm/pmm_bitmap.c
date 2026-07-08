@@ -1,4 +1,5 @@
 #include <learnix/arch/memlayout.h>
+#include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/string.h>
 #include <learnix/mm/pmm.h>
@@ -170,6 +171,8 @@ pmm_init (struct limine_memmap_response *mmap)
   bitmap_assign_range (start, end, 1);
 
   pmm_test ();
+
+  kprintf("[ INFO ] pmm_bitmap initialized\n");
 }
 
 paddr_t

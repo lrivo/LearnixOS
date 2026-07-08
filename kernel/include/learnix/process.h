@@ -2,7 +2,9 @@
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/process.h>
 #include <learnix/types.h>
+#include <learnix/fs.h>
 
+#define NFDS 10
 #define PROCS_LEN 64 
 #define KSTACK_SIZE 4096
 
@@ -37,7 +39,10 @@ struct process
   /* needed by the wait syscall. */
   struct process* parent;
   struct wait_queue *child_wq;
-
+  
+  /* file descriptors table for this process */
+  struct file fds[NFDS];
+  
   /* scheduling */
   ssize_t priority;
   /* doubly-linked list runqueue */

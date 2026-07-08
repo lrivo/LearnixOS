@@ -148,7 +148,13 @@ kmain (void)
   ps2kb_init ();
   
   // Initialize the init process (PID 1)
+  extern struct file tty_file;
+  //proc_by_pid(0)->fds[0] = tty_file;
+  //proc_by_pid(0)->fds[1] = tty_file;
+
   struct process *init = proc_create();
+  init->fds[0] = tty_file; 
+  init->fds[1] = tty_file;
   struct elf64_hdr *elf = (struct elf64_hdr*)limine_module_get("/boot/init");
   elf_load(elf, init->pgtable);
   arch_proc_init(init, elf->e_entry, USR_STACK + PGSIZE);

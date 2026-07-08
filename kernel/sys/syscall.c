@@ -52,10 +52,12 @@ syscall_dispatcher (struct intr_trap_frame *tf)
 void
 sys_read (struct intr_trap_frame *tf)
 {
-  char *buf = (char*)ARG1(tf);
+  int fd = (int)ARG0(tf);
+  void *buf = (void*)ARG1(tf);
   size_t count = (size_t)ARG2(tf);
-
-  RET(tf) = tty_read(&tty0, buf, count);
+  
+  struct file *f = &arch_cpu_get()->proc->fds[fd];
+  RET(tf) = f->ops->read(f, buf, count);
 }
 
 // FIXME: this now works because i am only using it for stdout
@@ -63,15 +65,13 @@ sys_read (struct intr_trap_frame *tf)
 void
 sys_write (struct intr_trap_frame *tf)
 {
-  char *buf = (char *)ARG1 (tf);
+  int fd = (int)ARG0(tf);
+  void *buf = (void*)ARG1 (tf);
   size_t count = (size_t)ARG2 (tf);
-
-  // FIXME: not validating user pointer
-  for (size_t i = 0; i < count; i++)
-    kprintf ("%c", buf[i]);
-
+  
   // write() should return the number of written chars
-  RET(tf) = count;
+  struct file *f = &arch_cpu_get()->proc->fds[fd];
+  RET(tf) = f->ops->write(f, buf, count);
 }
 
 /* for now we just mark the current process

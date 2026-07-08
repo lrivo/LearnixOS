@@ -29,4 +29,7 @@ void tty_init(void (*putchar)(char c));
 void tty_line_discipline(struct tty_ctx *tty, char c);
 
 /* Copies up to count characters into buf, called by sys_read() */
-ssize_t tty_read(struct tty_ctx *tty, char *buf, size_t count);
+ssize_t tty_read(struct file *f, void *buf, size_t count);
+
+/* Writes up to count characters on the screen, called by sys_write() */
+ssize_t tty_write(struct file *f, void *buf, size_t count);

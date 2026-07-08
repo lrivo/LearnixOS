@@ -14,13 +14,16 @@ sys_fork(struct intr_trap_frame *tf)
 
   // copy parent's userspace mappings into the child
   uvm_copy(child->pgtable, parent->pgtable);
-  
+
   // initialize child->tf, the memcpy below will overwrite the
   // trapframe this function sets up 
   arch_proc_init(child, 0, 0);
 
   // copy parent's trapframe into child's
   memcpy(child->tf, parent->tf, sizeof (struct intr_trap_frame));
+  
+  // copy parent's file descriptor table
+  memcpy(child->fds, parent->fds, NFDS * sizeof (struct file));
 
   // insert child in the runqueue
   sched_enqueue(child);

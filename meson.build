@@ -62,6 +62,8 @@ run_target('run',
     '-m', '2G',
     '-d', 'cpu_reset',
     '-cpu', 'qemu64,+rdrand,+rdseed',
+    '-nographic',
+    '-serial', 'mon:stdio'
   ],
   depends: iso_target
 )
