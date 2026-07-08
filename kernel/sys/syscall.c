@@ -7,46 +7,28 @@
 
 extern struct tty_ctx tty0;
 
+// syscall vtable
+static void (*sys_table[128])(struct intr_trap_frame *tf) = {
+  [SYS_READ] = sys_read,
+  [SYS_WRITE] = sys_write,
+  [SYS_MMAP] = sys_mmap,
+  [SYS_MUNMAP] = sys_munmap,
+  [SYS_GETPID] = sys_getpid,
+  [SYS_FORK] = sys_fork,
+  [SYS_EXECVE] = sys_execve,
+  [SYS_EXIT] = sys_exit,
+  [SYS_WAIT] = sys_wait,
+  [SYS_SET_FG_PROC] = sys_set_fg_proc
+};
+
 void
 syscall_dispatcher (struct intr_trap_frame *tf)
 {
   size_t num = NUM (tf);
-  switch (num)
-  {
-  case SYS_READ:
-    sys_read (tf);
-    break;
-  case SYS_WRITE:
-    sys_write (tf);
-    break;
-  case SYS_MMAP:
-    sys_mmap(tf);
-    break;
-  case SYS_MUNMAP:
-    sys_munmap(tf);
-    break;
-  case SYS_GETPID:
-    sys_getpid (tf);
-    break;
-  case SYS_FORK:
-    sys_fork (tf);
-    break;
-  case SYS_EXECVE:
-    sys_execve (tf);
-    break;
-  case SYS_EXIT:
-    sys_exit (tf);
-    break;
-  case SYS_WAIT:
-    sys_wait(tf);
-    break;
-  case SYS_SET_FG_PROC:
-    sys_set_fg_proc(tf);
-    break;
-  default:
+  if (num < 128 && sys_table[num])
+    sys_table[num](tf); 
+  else
     RET(tf) = -1;
-    break;
-  }
 }
 
 void

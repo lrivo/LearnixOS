@@ -1,20 +1,33 @@
 # Features
 - [x] extend the build system to support swappable components (scheduler, pmm, kmalloc)
 - [x] ChaCha20 CSPRNG
-- add file descriptors
-  - pipe() syscall
+- [x] file descriptors
+  - [x] TTY's stdin and stdout 
+  - [] actual on-disk files
+  - [] pipe() syscall
 - [x] mmap() syscall
   - [x] munmap() syscall
+
+# Components
 - linked-list based PMM
+- buddy PMM
+- MLFQ schedueler
 
 # Improvements
-- elf_load() implicitly assumes all section are 4KB
-- elf_load() does not check if a section is mapped in a page of another previous section (brainfuck bug)
+- ELF loading
+    - elf_load() implicitly assumes all section are 4KB
+    - elf_load() does not check if a section is mapped in a page of another previous section (brainfuck bug)
+- PMM
+    - expose flags to request specific type of memory (eg: DMA ready, below XGB, ...)
+- VMM
+    - mmap() and munmap() code is very very bad
 
 # Security
 - [x] stack canaries in userspace
 - ASLR in userspace
+    - a mess, since it requires loading position indipendent code
 - KASLR (enable in Limine and compile kernel as PIC)
+- KPTI (kernel page table isolation) as a tunable compile option
 
 # Bugs
 - [x] userspace/brainfuck immediately kernel panics
