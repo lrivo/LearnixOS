@@ -8,6 +8,7 @@ typedef int64_t ssize_t;
 #define SYS_WRITE 1
 #define SYS_MMAP 9
 #define SYS_MUNMAP 11
+#define SYS_PIPE 22
 #define SYS_GETPID 39
 #define SYS_FORK 57
 #define SYS_EXECVE 59
@@ -29,6 +30,7 @@ void* mmap(void *addr, size_t length, int prot, int flags);
 int munmap(void *addr, size_t length);
 
 int32_t getpid(void);
+int pipe(int *pipefd);
 int fork(void);
 int execve(const char *path, const char **argv, const char **envp);
 void exit(size_t code);

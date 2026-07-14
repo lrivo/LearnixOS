@@ -12,9 +12,11 @@ struct cpu
   bool proc_need_resched; // 8
   uint32_t id;
   struct process *proc;          // 16
-  struct arch_cpu_data cpu_data; // 24
+  struct arch_cpu_data cpu_data; // 24   WARN: must remain 24 bytes into the struct
 };
 
+/* This contains general information on the physical CPU identified
+ * using instructions like CPUID on amd64. */
 struct cpu_info
 {
   /* architecture specific data, put first for casting */
@@ -28,19 +30,21 @@ struct cpu_info
   uint8_t pa_bits_max; // max physical address bit size
   uint8_t va_bits_max; // max virtual address bit size
 
-/* known hardware bugs (eg: Meltdown, Spectre) */
-#define CPU_BUG_MELTDOWN (1 << 0)
-#define CPU_BUG_SPECTRE (1 << 1)
+  /* TODO known hardware bugs (eg: Meltdown, Spectre) */
+  #define CPU_BUG_MELTDOWN (1 << 0)
+  #define CPU_BUG_SPECTRE (1 << 1)
   uint64_t bugs;
 };
 
-/* Early minimal CPU initialization. */
+/* Minimal CPU initialization in early kmain().
+ * Should at least setup exception handlers. */
 void arch_stage_1 (void);
 
 /* Full CPU initialization for running processes
  * and (in the future) SMP. */
 void arch_stage_2 (void);
 
+/* Returns the struct cpu of calling core. */
 struct cpu *arch_cpu_get (void);
 
 /* Identify the running CPU (es: cpuid on x86). */

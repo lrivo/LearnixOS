@@ -62,6 +62,7 @@ kernel_src = files(
   'sched/sched.c',
   'sys/syscall.c',
   'sys/tty.c',
+  'sys/pipe.c',
   'security/canary.c',
 )
 kernel_src += cc_runtime_dep

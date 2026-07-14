@@ -25,6 +25,11 @@ munmap(void *addr, size_t length)
   return (int)_do_syscall(SYS_MUNMAP, (size_t)addr, length, 0, 0, 0, 0);
 }
 
+int
+pipe(int *pipefd) {
+  return (int)_do_syscall(SYS_PIPE, (size_t)pipefd, 0, 0, 0, 0, 0);
+}
+
 int32_t
 getpid(void)
 {

@@ -13,6 +13,7 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_WRITE] = sys_write,
   [SYS_MMAP] = sys_mmap,
   [SYS_MUNMAP] = sys_munmap,
+  [SYS_PIPE] = sys_pipe,
   [SYS_GETPID] = sys_getpid,
   [SYS_FORK] = sys_fork,
   [SYS_EXECVE] = sys_execve,

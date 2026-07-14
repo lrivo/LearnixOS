@@ -41,6 +41,7 @@ struct process
   struct wait_queue *child_wq;
   
   /* file descriptors table for this process */
+  // TODO: this mst become a struct file *fds[NFDS]
   struct file fds[NFDS];
   
   /* scheduling */

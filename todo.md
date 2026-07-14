@@ -13,7 +13,7 @@
 - buddy PMM
 - MLFQ schedueler
 
-# Improvements
+# Improvements & Refactors
 - ELF loading
     - elf_load() implicitly assumes all section are 4KB
     - elf_load() does not check if a section is mapped in a page of another previous section (brainfuck bug)
@@ -21,6 +21,10 @@
     - expose flags to request specific type of memory (eg: DMA ready, below XGB, ...)
 - VMM
     - mmap() and munmap() code is very very bad
+- CPU
+    - arch_cpu_get() should be replaced with some shorter macro
+    - struct cpu should probably contain the runqueue for SMP reasons
+    - amd64 CPUID parsing is never used at all
 
 # Security
 - [x] stack canaries in userspace
