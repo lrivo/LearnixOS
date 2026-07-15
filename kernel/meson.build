@@ -58,6 +58,7 @@ kernel_src = files(
   'proc/fork.c',
   'proc/getpid.c',
   'proc/process.c',
+  'proc/exit.c',
   'proc/wait.c',
   'sched/sched.c',
   'sys/syscall.c',

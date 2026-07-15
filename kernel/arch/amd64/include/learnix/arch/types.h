@@ -16,4 +16,4 @@ typedef int64_t ssize_t;
 typedef uint64_t paddr_t; // a physical address
 typedef uint64_t vaddr_t; // a virtual address
 
-#define NULL (size_t)0
+#define NULL (void*)0

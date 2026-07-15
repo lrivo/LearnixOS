@@ -23,7 +23,12 @@ sys_fork(struct intr_trap_frame *tf)
   memcpy(child->tf, parent->tf, sizeof (struct intr_trap_frame));
   
   // copy parent's file descriptor table
-  memcpy(child->fds, parent->fds, NFDS * sizeof (struct file));
+  for (int i = 0; i < NFDS; i++) {
+    if (!parent->fds[i]) continue;
+
+    child->fds[i] = parent->fds[i];
+    child->fds[i]->refcount++;
+  }
 
   // insert child in the runqueue
   sched_enqueue(child);

@@ -70,13 +70,14 @@ proc_destroy(struct process *p)
 {
   // free his page table
   uvm_destroy(p->pgtable);
-
-  // free his kernel stack
+  
+  /* Free his kernel stack. This can't be done by sys_exit() because
+     it is executing on p->kstack herself. */
   pmm_unref_pg(V2P(p->kstack));
   
   // release his pid
   procs[p->pid] = NULL;
 
-  // free his PCB
+  // finally, free his PCB
   kfree(p);
 }

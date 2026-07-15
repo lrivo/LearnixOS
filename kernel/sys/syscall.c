@@ -1,4 +1,5 @@
 #include <learnix/cpu.h>
+#include <learnix/mm/kmalloc.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/scheduler.h>
@@ -39,12 +40,10 @@ sys_read (struct intr_trap_frame *tf)
   void *buf = (void*)ARG1(tf);
   size_t count = (size_t)ARG2(tf);
   
-  struct file *f = &arch_cpu_get()->proc->fds[fd];
+  struct file *f = arch_cpu_get()->proc->fds[fd];
   RET(tf) = f->ops->read(f, buf, count);
 }
 
-// FIXME: this now works because i am only using it for stdout
-// but it must be refactored to potentially block when I'll have pipes
 void
 sys_write (struct intr_trap_frame *tf)
 {
@@ -53,33 +52,8 @@ sys_write (struct intr_trap_frame *tf)
   size_t count = (size_t)ARG2 (tf);
   
   // write() should return the number of written chars
-  struct file *f = &arch_cpu_get()->proc->fds[fd];
+  struct file *f = arch_cpu_get()->proc->fds[fd];
   RET(tf) = f->ops->write(f, buf, count);
-}
-
-/* for now we just mark the current process
-   as zombie and immediately schedule to the next
-   runnable process. */
-void
-sys_exit (struct intr_trap_frame *tf)
-{
-  struct process *proc = arch_cpu_get()->proc;  
-
-  // can't exit idle and init processes
-  if (proc->pid <= 1)
-    kpanic("init process can't exit\n");
-
-  // now we become a zombie and wakeup the parent
-  proc->state = ZOMBIE;
-  wake_up(&proc->parent->child_wq);
-  
-  /* try to remove ourself from the runqueue.
-   * Will fail if we're not alredy in. */
-  sched_dequeue(proc);
-
-  schedule ();
-  
-  // will never return here
 }
 
 void

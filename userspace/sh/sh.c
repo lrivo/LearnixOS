@@ -29,8 +29,10 @@ parse_and_execute(const char *buf, size_t n)
   else
   {
     set_fg_proc(getpid());
-    if (execve(cmd, 0, 0) < 0)
+    if (execve(cmd, 0, 0) < 0) {
       write(1, "error\n", 6);
+      exit(-1);
+    }
   }
 }
 

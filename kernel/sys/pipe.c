@@ -2,18 +2,19 @@
 #include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/mm/kmalloc.h>
+#include <learnix/scheduler.h>
 #include <learnix/syscall.h>
 #include <learnix/fs.h>
+#include <learnix/pipe.h>
 
-/* Kernel data structure of a pipe. Goes in struct file->ptr. */
-struct pipe {
-    #define PIPE_BUF_SIZE 512
-    char buffer[PIPE_BUF_SIZE];
-    uint32_t nread;     // number of bytes read
-    uint32_t nwrite;    // number of bytes written
+static struct file_ops pipe_read_fops = { 
+    .read=pipe_read, .write=NULL, .close=pipe_close
 };
 
-/* File ops implementation for a pipe. */
+static struct file_ops pipe_write_fops = { 
+    .read=NULL, .write=pipe_write, .close=pipe_close
+};
+
 ssize_t pipe_read
 (struct file *f, void* buf, size_t count) {
     struct pipe *pipe;
@@ -22,9 +23,10 @@ ssize_t pipe_read
     kprintf("pipe_read\n");
     pipe = (struct pipe*)f->ptr;
 
-    // pipe is empty, for now non-blocking behaviour
-    if (pipe->nwrite == 0)
-        return -1;
+    // pipe is empty, we block
+    if (pipe->nwrite == 0) {
+        sleep_on(&pipe->rq);
+    }
 
     // how much we can safely read from the pipe?
     n = pipe->nwrite - pipe->nread < count 
@@ -57,10 +59,37 @@ ssize_t pipe_write
     // copy n bytes from userspace into the pipe
     // and advance the pipe's write counter
     memcpy(&pipe->buffer[pipe->nwrite += n], buf, n);
+
+    // wake up potential readers
+    wake_up(&pipe->rq);
     return n;
 }
 
-static struct file_ops pipe_ops = { pipe_read, pipe_write, NULL };
+int pipe_close
+(struct file *f) {
+    kprintf("pipe_close\n");
+    struct pipe* pipe = (struct pipe*)f->ptr;
+
+    if (f->ops == &pipe_read_fops)
+        pipe->nreaders--;
+    else
+        pipe->nwriters--;
+
+    if (pipe->nreaders == 0 && pipe->nwriters == 0) {
+        kprintf("kfree(pipe)");
+        kfree(pipe);
+    }
+
+    return 0;
+}
+
+/* Helpers */
+// Returns the lowest usable file descriptor, -1 on failure.
+static int fd_find(struct process *p) {
+    for (int i = 0; i < NFDS; i++)
+        if (!p->fds[i]) return i;
+    return -1;
+}
 
 /*
  *  Signature -> int pipe(int pipefd[2])
@@ -75,70 +104,64 @@ static struct file_ops pipe_ops = { pipe_read, pipe_write, NULL };
  */
 void sys_pipe
 (struct intr_trap_frame *tf) {
-    struct file *fd;
+    struct file *fd1 = NULL, *fd2 = NULL;
+    struct pipe *pipe = NULL;
     struct process *p;
-    struct pipe *pipe;
-    int *pipefd, i;
+    int *pipefd, i, j;
 
     p = arch_cpu_get()->proc;
     pipefd = (int*)ARG0(tf);
 
-    // 1. kmalloc a struct pipe
-    pipe = kmalloc(sizeof(struct pipe));
+    // 1. allocate the pipe's kernel data structure, zero-ed out.
+    pipe = kzalloc(sizeof(struct pipe));
     if (!pipe)
         goto bad;
-
-    pipe->nread = 0;
-    pipe->nwrite = 0;
+    else
+        pipe->nreaders = pipe->nwriters = 1;
     
     // 2. create the read file descriptor
     // 2.1 find the lowest usable file descriptor
-    for (i = 0, fd = NULL; i < NFDS; i++)
-    {
-        if (p->fds[i].ptr == NULL)
-        {
-            fd = &p->fds[i];
-            break;
-        }
-    }
-    if (!fd)
+    i = fd_find(p);
+    if (i < 0)
         goto bad;
     
-    // 2.2 initialize it
-    fd->offset = 0;
-    fd->refcount = 0;
-    fd->ptr = (void*)pipe;
-    fd->ops = &pipe_ops;
-    pipefd[0] = i;
-    kprintf("pipefd[0] = %d\n", i);
+    // 2.2 initialize it as a read-only file descriptor
+    fd1 = kmalloc(sizeof(struct file));
+    fd1->offset = 0;
+    fd1->refcount = 1;
+    fd1->ptr = (void*)pipe;
+    fd1->ops = &pipe_read_fops;
+    p->fds[i] = fd1;
 
     // 3. create the write file descriptor
-    // 3.1 find the lowest usable file descriptor
-    for (i++, fd = NULL;i < NFDS; i++)
-    {
-        if (p->fds[i].ptr == NULL)
-        {
-            fd = &p->fds[i];
-            break;
-        }
-    }
-    if (!fd)
+    j = fd_find(p);
+    if (j < 0)
         goto bad;
+
+    fd2 = kmalloc(sizeof(struct file));
+    fd2->offset = 0;
+    fd2->refcount = 1;
+    fd2->ptr = (void*)pipe;
+    fd2->ops = &pipe_write_fops;
+    p->fds[j] = fd2;
     
-    // 3.2 initialize it
-    fd->offset = 0;
-    fd->refcount = 0;
-    fd->ptr = (void*)pipe;
-    fd->ops = &pipe_ops;
-    pipefd[1] = i;
-    kprintf("pipefd[1] = %d\n", i);
-    
-    // 4. success
+    /* 4. now we can modify p->fds[]. We do it at the end because per POSIX
+     * specs, if pipe() fails, it must not modify the pipefd argument. */
+    pipefd[0] = i;
+    pipefd[1] = j;
     RET(tf) = 0;
     return;
 
 bad:
     if (pipe)
         kfree(pipe);
+    if (fd1) {
+        p->fds[i] = NULL;
+        kfree(fd1);
+    }
+    if (fd2) {
+        p->fds[j] = NULL;
+        kfree(fd2);
+    }
     RET(tf) = -1;
 }
