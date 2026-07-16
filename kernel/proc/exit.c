@@ -1,4 +1,5 @@
 #include <learnix/cpu.h>
+#include <learnix/fs.h>
 #include <learnix/syscall.h>
 #include <learnix/scheduler.h>
 #include <learnix/process.h>
@@ -23,16 +24,15 @@ sys_exit (struct intr_trap_frame *tf)
   if (p->pid <= 1)
     kpanic("init process can't exit\n");
 
-  // TODO: move this to a fd_close() helper
   // 1) close any opened file descriptor
   for (int i = 0; i < NFDS; i++) {
-    if (!p->fds[i]) continue;
-    if (--p->fds[i]->refcount == 0) {
-      if (p->fds[i]->ops->close)
-        p->fds[i]->ops->close(p->fds[i]);
-      kfree(p->fds[i]);
-      p->fds[i] = NULL;
-    }
+    // skip unused file descriptors
+    if (!p->fds[i])
+      continue;
+
+    // this will actually close the underlying file if
+    // this refcount is decremented to 0
+    file_close(p->fds[i]);
   }
 
   // 2) reparent all his childrens to PID 1

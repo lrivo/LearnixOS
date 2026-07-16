@@ -98,9 +98,7 @@ static int fd_find(struct process *p) {
  *  pipefd[0] -> read-end of the pipe
  *  pipefd[1] -> write-end of the pipe
  *
- *  BUG: if pipefd[1] creation fails pipefd[0] is not cleaned
- *       this is a problem because struct process should use a
- *       struct file *fds[NFDS] instead of a struct file fds[NFDS]
+ *  If it fails it must never modify the pipefd argument.
  */
 void sys_pipe
 (struct intr_trap_frame *tf) {
@@ -126,23 +124,19 @@ void sys_pipe
         goto bad;
     
     // 2.2 initialize it as a read-only file descriptor
-    fd1 = kmalloc(sizeof(struct file));
-    fd1->offset = 0;
-    fd1->refcount = 1;
-    fd1->ptr = (void*)pipe;
-    fd1->ops = &pipe_read_fops;
+    fd1 = file_alloc(pipe, &pipe_read_fops);
+    if (!fd1)
+        goto bad;
     p->fds[i] = fd1;
 
     // 3. create the write file descriptor
     j = fd_find(p);
     if (j < 0)
         goto bad;
-
-    fd2 = kmalloc(sizeof(struct file));
-    fd2->offset = 0;
-    fd2->refcount = 1;
-    fd2->ptr = (void*)pipe;
-    fd2->ops = &pipe_write_fops;
+    
+    fd2 = file_alloc(pipe, &pipe_write_fops);
+    if (!fd2)
+        goto bad;
     p->fds[j] = fd2;
     
     /* 4. now we can modify p->fds[]. We do it at the end because per POSIX

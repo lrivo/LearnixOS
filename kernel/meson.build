@@ -54,6 +54,7 @@ kernel_src = files(
   'mm/uvm.c',
   'mm/vmm.c',
   'mm/mmap.c',
+  'fs/file.c',
   'proc/execve.c',
   'proc/fork.c',
   'proc/getpid.c',

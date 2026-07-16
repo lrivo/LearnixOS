@@ -29,3 +29,10 @@ struct inode
     uint32_t flags;
     uint32_t inum;
 };
+
+// ==== FILE ==== //
+/* Initializes a new file descriptor's kernel data structure. */
+struct file *file_alloc(void *ptr, struct file_ops *ops);
+
+/* Decrements the refcount and kfree(f) if it reaches zero. */
+int file_close(struct file* f);
