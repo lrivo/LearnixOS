@@ -6,9 +6,12 @@ typedef int64_t ssize_t;
 
 #define SYS_READ 0
 #define SYS_WRITE 1
+#define SYS_OPEN 2
+#define SYS_CLOSE 3
 #define SYS_MMAP 9
 #define SYS_MUNMAP 11
 #define SYS_PIPE 22
+#define SYS_YIELD 24
 #define SYS_GETPID 39
 #define SYS_FORK 57
 #define SYS_EXECVE 59
@@ -19,6 +22,8 @@ typedef int64_t ssize_t;
 /* SYSCALLS */
 long int read(int fd, char *buf, size_t len);
 long int write(int fd, char *buf, size_t len);
+int open(char *path, int flags, int mode);
+int close(int fd);
 
 #define PROT_NONE (1 << 0U)
 #define PROT_READ (1 << 1U)
@@ -31,6 +36,7 @@ int munmap(void *addr, size_t length);
 
 int32_t getpid(void);
 int pipe(int *pipefd);
+int yield(void);
 int fork(void);
 int execve(const char *path, const char **argv, const char **envp);
 void exit(size_t code);

@@ -1,4 +1,5 @@
 #include "include/liblearnix.h"
+#include <stddef.h>
 #include <stdint.h>
 
 long int
@@ -11,6 +12,16 @@ long int
 write(int fd, char *buf, size_t len)
 {
   return (long int)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);
+}
+
+int
+open(char *path, int flags, int mode) {
+    return (int)_do_syscall(SYS_OPEN, (size_t)path, (size_t)flags, (size_t)mode, 0, 0, 0);
+}
+
+int
+close(int fd) {
+    return (int)_do_syscall(SYS_CLOSE, (size_t)fd, 0, 0, 0, 0, 0);
 }
 
 void*
@@ -28,6 +39,11 @@ munmap(void *addr, size_t length)
 int
 pipe(int *pipefd) {
   return (int)_do_syscall(SYS_PIPE, (size_t)pipefd, 0, 0, 0, 0, 0);
+}
+
+int
+yield(void) {
+    return (int)_do_syscall(SYS_YIELD, 0, 0, 0, 0, 0, 0);
 }
 
 int32_t
@@ -97,6 +113,6 @@ memset (void *s, int c, size_t n)
 __attribute__((noreturn))
 void __stack_chk_fail(void)
 {
-  write(1, "stack smashing detected\n", 24); 
+  write(1, "stack smashing detected\n", 24);
   exit(-1);
 }

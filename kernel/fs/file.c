@@ -2,7 +2,7 @@
  *  file.c contains various helper functions to manage the lifecycle
  *  of a file descriptor in the kernel, represented by struct file.
  */
-#include <learnix/fs.h> 
+#include <learnix/fs.h>
 #include <learnix/mm/kmalloc.h>
 
 struct file*
@@ -20,7 +20,7 @@ file_alloc(void *ptr, struct file_ops *ops) {
 int
 file_close(struct file *f) {
     // avoid a NULL pointer dereference later
-    if (!f) 
+    if (!f)
         return -1;
 
     /* decrement refcount, and close the file if
@@ -32,9 +32,6 @@ file_close(struct file *f) {
 
         // and then free this file
         kfree(f);
-        return 1;
     }
-
-    // file existed but nothing closed
     return 0;
 }

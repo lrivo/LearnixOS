@@ -3,18 +3,21 @@
 int main() {
   int pipefd[2];
   char buffer[128];
-  
+
   // create a pipe
   if (pipe(pipefd) == -1) {
     write(1, "pipe failed\n", 12);
     exit(-1);
   }
-  
+  close(pipefd[1]); // FIX: the parent hangs in read even if pipe has no writers
+
   // fork
   int pid = fork();
   if (pid == 0) {
     // child
-    write(pipefd[1], "Hello from child!\n", 18);
+    ssize_t n = write(pipefd[1], "Hello from child!\n", 18);
+    if (n == -1)
+        write(1, "EBADF\n", 7);
   } else {
     // parent
     ssize_t n = read(pipefd[0], buffer, 20);

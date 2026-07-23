@@ -8,7 +8,7 @@
 
 /*
  * Exit terminates the calling process immediately.
- * 
+ *
  * The following must happen:
  * 1) any opened file descriptors are closed.
  * 2) any children of the process are inherited by PID 1.
@@ -48,7 +48,7 @@ sys_exit (struct intr_trap_frame *tf)
   // 4) become a ZOMBIE and try to wake up the parent process
   p->state = ZOMBIE;
   wake_up(&p->parent->child_wq);
-  
+
   // remove ourselves from the runqueue
   sched_dequeue(p);
 

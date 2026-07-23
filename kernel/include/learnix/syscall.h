@@ -2,11 +2,18 @@
 #include <learnix/arch/interrupts.h>
 #include <learnix/types.h>
 
+/* Linux syscall errors (they are returned negated) */
+#define EBADF 9
+
+/* Linux syscall numbers */
 #define SYS_READ 0
 #define SYS_WRITE 1
+#define SYS_OPEN 2
+#define SYS_CLOSE 3
 #define SYS_MMAP 9
 #define SYS_MUNMAP 11
 #define SYS_PIPE 22
+#define SYS_YIELD 24
 #define SYS_GETPID 39
 #define SYS_FORK 57
 #define SYS_EXECVE 59
@@ -18,9 +25,11 @@
  * routine for each HW architecture. */
 void syscall_dispatcher (struct intr_trap_frame *tf);
 
-/* Linux syscalls */
+/* Actual syscalls */
 void sys_read (struct intr_trap_frame *tf);
 void sys_write (struct intr_trap_frame *tf);
+void sys_open (struct intr_trap_frame *tf);
+void sys_close (struct intr_trap_frame *tf);
 
 #define PROT_NONE (1 << 0U)
 #define PROT_READ (1 << 1U)
@@ -31,6 +40,7 @@ void sys_write (struct intr_trap_frame *tf);
 void sys_mmap (struct intr_trap_frame *tf);
 void sys_munmap (struct intr_trap_frame *tf);
 
+void sys_yield (struct intr_trap_frame *tf);
 void sys_pipe (struct intr_trap_frame *tf);
 void sys_getpid (struct intr_trap_frame *tf);
 void sys_fork (struct intr_trap_frame *tf);
