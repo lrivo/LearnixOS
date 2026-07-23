@@ -3,7 +3,8 @@
 #include <learnix/types.h>
 
 /* Linux syscall errors (they are returned negated) */
-#define EBADF 9
+#define EBADF 9     // bad file descriptor
+#define EPIPE 32    // broken pipe
 
 /* Linux syscall numbers */
 #define SYS_READ 0

@@ -4,7 +4,7 @@
 - [x] file descriptors
   - [x] TTY's stdin and stdout 
   - [] actual on-disk files
-  - [] pipe() syscall
+  - [x] pipe() syscall
 - [x] mmap() syscall
   - [x] munmap() syscall
 

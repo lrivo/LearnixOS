@@ -7,11 +7,11 @@
 #include <learnix/fs.h>
 #include <learnix/pipe.h>
 
-static struct file_ops pipe_read_fops = { 
+static struct file_ops pipe_read_fops = {
     .read=pipe_read, .write=NULL, .close=pipe_close
 };
 
-static struct file_ops pipe_write_fops = { 
+static struct file_ops pipe_write_fops = {
     .read=NULL, .write=pipe_write, .close=pipe_close
 };
 
@@ -19,18 +19,20 @@ ssize_t pipe_read
 (struct file *f, void* buf, size_t count) {
     struct pipe *pipe;
     size_t n;
-    
+
     kprintf("pipe_read\n");
     pipe = (struct pipe*)f->ptr;
 
-    // pipe is empty, we block
-    if (pipe->nwrite == 0) {
+    // pipe is empty with at least one writer
+    if (pipe->nwrite == 0 && pipe->nwriters > 0) {
         sleep_on(&pipe->rq);
     }
+    if (pipe->nwriters == 0 && pipe->nread == 0)
+        return 0;   // reader wakes up, finds no writers and nothing to read (EOF)
 
     // how much we can safely read from the pipe?
-    n = pipe->nwrite - pipe->nread < count 
-        ? pipe->nwrite - pipe->nread 
+    n = pipe->nwrite - pipe->nread < count
+        ? pipe->nwrite - pipe->nread
         : count;
 
     // read n bytes from the pipe into userspace
@@ -43,13 +45,16 @@ ssize_t pipe_write
 (struct file *f, void *buf, size_t count) {
     struct pipe *pipe;
     size_t n;
-    
+
     kprintf("pipe_write\n");
     pipe = (struct pipe*)f->ptr;
-    
+
+    // pipe has no readers
+    if (pipe->nreaders == 0)
+        return -EPIPE;
     // pipe is full
     if (pipe->nwrite >= PIPE_BUF_SIZE)
-        return -1;
+        return -1;  // TODO: non Linux compliant
 
     // how much we can safely write in the pipe?
     n = pipe->nwrite + count > PIPE_BUF_SIZE
@@ -70,10 +75,16 @@ int pipe_close
     kprintf("pipe_close\n");
     struct pipe* pipe = (struct pipe*)f->ptr;
 
-    if (f->ops == &pipe_read_fops)
+    if (f->ops == &pipe_read_fops) {
+        // decrement the readers counter
         pipe->nreaders--;
-    else
+    } else {
+        // decrement the writers counter
         pipe->nwriters--;
+        // wake-up potential readers who are blocked
+        if (pipe->nreaders > 0)
+            wake_up(&pipe->rq);
+    }
 
     if (pipe->nreaders == 0 && pipe->nwriters == 0) {
         kprintf("kfree(pipe)");
@@ -93,7 +104,7 @@ static int fd_find(struct process *p) {
 
 /*
  *  Signature -> int pipe(int pipefd[2])
- *  
+ *
  *  Returns:
  *  pipefd[0] -> read-end of the pipe
  *  pipefd[1] -> write-end of the pipe
@@ -116,13 +127,13 @@ void sys_pipe
         goto bad;
     else
         pipe->nreaders = pipe->nwriters = 1;
-    
+
     // 2. create the read file descriptor
     // 2.1 find the lowest usable file descriptor
     i = fd_find(p);
     if (i < 0)
         goto bad;
-    
+
     // 2.2 initialize it as a read-only file descriptor
     fd1 = file_alloc(pipe, &pipe_read_fops);
     if (!fd1)
@@ -133,12 +144,12 @@ void sys_pipe
     j = fd_find(p);
     if (j < 0)
         goto bad;
-    
+
     fd2 = file_alloc(pipe, &pipe_write_fops);
     if (!fd2)
         goto bad;
     p->fds[j] = fd2;
-    
+
     /* 4. now we can modify p->fds[]. We do it at the end because per POSIX
      * specs, if pipe() fails, it must not modify the pipefd argument. */
     pipefd[0] = i;
