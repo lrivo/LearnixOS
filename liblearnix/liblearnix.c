@@ -52,6 +52,12 @@ getpid(void)
   return (int32_t)_do_syscall(SYS_GETPID, 0, 0, 0, 0, 0, 0);
 }
 
+int32_t
+getppid(void)
+{
+  return (int32_t)_do_syscall(SYS_GETPPID, 0, 0, 0, 0, 0, 0);
+}
+
 int
 fork(void)
 {
@@ -80,6 +86,12 @@ int
 set_fg_proc(uint32_t pid)
 {
   return (int)_do_syscall(SYS_SET_FG_PROC, pid, 0, 0, 0, 0, 0);
+}
+
+/* stdio.h */
+void _putchar(char character) {
+    // TODO: will need some sort of buffering
+    write(1, &character, 1);
 }
 
 /* strings.h */

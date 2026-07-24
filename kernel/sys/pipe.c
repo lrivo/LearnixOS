@@ -27,13 +27,15 @@ ssize_t pipe_read
     if (pipe->nwrite == 0 && pipe->nwriters > 0) {
         sleep_on(&pipe->rq);
     }
-    if (pipe->nwriters == 0 && pipe->nread == 0)
-        return 0;   // reader wakes up, finds no writers and nothing to read (EOF)
 
     // how much we can safely read from the pipe?
     n = pipe->nwrite - pipe->nread < count
         ? pipe->nwrite - pipe->nread
         : count;
+
+    // no writers left and nothing to read -> EOF
+    if (pipe->nwriters == 0 && n == 0)
+        return 0;
 
     // read n bytes from the pipe into userspace
     // and advance the pipe's read counter

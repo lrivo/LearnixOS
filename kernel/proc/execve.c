@@ -15,7 +15,7 @@ sys_execve (struct intr_trap_frame *tf)
   vaddr_t uvm = 0;                                  // new page table
   struct process *curr = arch_cpu_get()->proc;      // process that called execve()
   struct elf64_hdr *elf;                            // ELF header
-  
+
   // get the ELF file
   elf = (struct elf64_hdr*)limine_module_get((const char*)ARG0(tf));
 
@@ -26,12 +26,15 @@ sys_execve (struct intr_trap_frame *tf)
 
   // allocate a new page table with kernel mappings
   uvm = uvm_alloc ();
-  
+
   // try to load the ELF image into uvm
   ret = elf_load(elf, uvm);
   if (ret < 0)
     goto bad;
-  
+
+  // destroy the old uvm (TODO: make this deferred when kernel_idle runs)
+  uvm_destroy(curr->pgtable);
+
   // swap curr's page table
   curr->pgtable = uvm;
 
@@ -43,7 +46,7 @@ sys_execve (struct intr_trap_frame *tf)
 
   // unwind the syscall stack frame
   return;
-  
+
   /* if the requested ELF file was bad we destroy the
    * new page table and return an error to the caller. */
 bad:

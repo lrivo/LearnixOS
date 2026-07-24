@@ -1,6 +1,7 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef int64_t ssize_t;
 
@@ -13,6 +14,7 @@ typedef int64_t ssize_t;
 #define SYS_PIPE 22
 #define SYS_YIELD 24
 #define SYS_GETPID 39
+#define SYS_GETPPID 40
 #define SYS_FORK 57
 #define SYS_EXECVE 59
 #define SYS_EXIT 60
@@ -35,6 +37,7 @@ void* mmap(void *addr, size_t length, int prot, int flags);
 int munmap(void *addr, size_t length);
 
 int32_t getpid(void);
+int32_t getppid(void);
 int pipe(int *pipefd);
 int yield(void);
 int fork(void);

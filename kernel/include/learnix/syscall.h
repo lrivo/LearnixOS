@@ -16,6 +16,7 @@
 #define SYS_PIPE 22
 #define SYS_YIELD 24
 #define SYS_GETPID 39
+#define SYS_GETPPID 40
 #define SYS_FORK 57
 #define SYS_EXECVE 59
 #define SYS_EXIT 60
@@ -44,6 +45,7 @@ void sys_munmap (struct intr_trap_frame *tf);
 void sys_yield (struct intr_trap_frame *tf);
 void sys_pipe (struct intr_trap_frame *tf);
 void sys_getpid (struct intr_trap_frame *tf);
+void sys_getppid (struct intr_trap_frame *tf);
 void sys_fork (struct intr_trap_frame *tf);
 void sys_execve (struct intr_trap_frame *tf);
 void sys_exit (struct intr_trap_frame *tf);

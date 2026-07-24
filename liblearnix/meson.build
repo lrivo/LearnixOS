@@ -15,6 +15,7 @@ liblearnix_nasm_args = [
 
 liblearnix_src = files(
   'liblearnix.c',
+  'printf.c',
   'liblearnix.asm',
 )
 liblearnix_src += cc_runtime_dep
@@ -25,7 +26,7 @@ liblearnix_ar = static_library(
   liblearnix_src,
   c_args: liblearnix_c_args,
   nasm_args: liblearnix_nasm_args,
-  include_directories: freestnd_hdrs_dep,
+  include_directories: [include_directories('include'), freestnd_hdrs_dep]
 )
 
 # this is the dependency included by userspace programs
