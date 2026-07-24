@@ -1,4 +1,5 @@
-#include <liblearnix.h>
+#include <stdio.h>
+#include <unistd.h>
 
 uint8_t memory[2048] = { 0 };
 uint8_t program[1024];
@@ -7,7 +8,7 @@ static inline uint8_t*
 find_prev_bracket(uint8_t *ip)
 {
   uint8_t *curr = ip;
-  while (curr >= program && *curr != '[') 
+  while (curr >= program && *curr != '[')
     ;
   return curr;
 }
@@ -47,6 +48,6 @@ int main()
     }
     ip++;
   }
-  write(1, "done\n", 5);
+  printf("done\n");
   return 0;
 }

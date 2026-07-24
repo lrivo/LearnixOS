@@ -1,4 +1,5 @@
-#include <liblearnix.h> 
+#include <unistd.h>
+#include <sys/wait.h>
 
 int main()
 {
@@ -12,8 +13,8 @@ int main()
   {
     // reap zombie childs with no parent
     while (1)
-      wait();
+      wait(NULL);
   }
-  
+
   return 0;
 }

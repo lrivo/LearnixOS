@@ -5,7 +5,6 @@
 
 /* Those are included by the compiler for the
  * target architecture. */
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 

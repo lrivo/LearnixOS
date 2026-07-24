@@ -1,5 +1,8 @@
-#include <liblearnix.h>
+#include <stdio.h>
+#include <unistd.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <sys/wait.h>
 
 void
 parse_and_execute(const char *buf, size_t n)
@@ -24,14 +27,14 @@ parse_and_execute(const char *buf, size_t n)
     // set child as the foreground process
     set_fg_proc(pid);
     // wait for child to finish
-    wait();
+    wait(NULL);
   }
   else
   {
     set_fg_proc(getpid());
     if (execve(cmd, 0, 0) < 0) {
-      write(1, "error\n", 6);
-      exit(-1);
+      printf("not found: %s\n", cmd);
+      exit(1);
     }
   }
 }
@@ -41,17 +44,17 @@ int main()
   char buf[512];
   ssize_t n;
   int pid = getpid();
-  
+
   set_fg_proc(pid);
 
   while (1)
   {
     // write prompt to stdout
-    write(1, "> ", 2);
-    
+    printf("> ");
+
     // read user input
     n = read(0, buf, 512);
-    
+
     // try executing the input
     if (n > 0)
     {

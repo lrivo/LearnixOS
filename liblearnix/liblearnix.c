@@ -1,22 +1,25 @@
-#include "include/liblearnix.h"
 #include <stddef.h>
-#include <stdint.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-long int
-read(int fd, char *buf, size_t len)
-{
-  return (long int)_do_syscall(SYS_READ, fd, (size_t)buf, len, 0, 0, 0);
+ssize_t
+read(int fd, const void *buf, size_t len) {
+  return (ssize_t)_do_syscall(SYS_READ, fd, (size_t)buf, len, 0, 0, 0);
 }
 
-long int
-write(int fd, char *buf, size_t len)
-{
-  return (long int)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);
+ssize_t
+write(int fd, const void *buf, size_t len) {
+  return (ssize_t)_do_syscall(SYS_WRITE, fd, (size_t)buf, len, 0, 0, 0);
 }
 
 int
-open(char *path, int flags, int mode) {
-    return (int)_do_syscall(SYS_OPEN, (size_t)path, (size_t)flags, (size_t)mode, 0, 0, 0);
+open(const char *pathname, int flags, int mode) {
+    return (int)_do_syscall(SYS_OPEN, (size_t)pathname, (size_t)flags, (size_t)mode, 0, 0, 0);
 }
 
 int
@@ -37,7 +40,7 @@ munmap(void *addr, size_t length)
 }
 
 int
-pipe(int *pipefd) {
+pipe(int pipefd[2]) {
   return (int)_do_syscall(SYS_PIPE, (size_t)pipefd, 0, 0, 0, 0, 0);
 }
 
@@ -46,46 +49,45 @@ yield(void) {
     return (int)_do_syscall(SYS_YIELD, 0, 0, 0, 0, 0, 0);
 }
 
-int32_t
-getpid(void)
-{
+pid_t
+getpid(void) {
   return (int32_t)_do_syscall(SYS_GETPID, 0, 0, 0, 0, 0, 0);
 }
 
-int32_t
-getppid(void)
-{
+pid_t
+getppid(void) {
   return (int32_t)_do_syscall(SYS_GETPPID, 0, 0, 0, 0, 0, 0);
 }
 
-int
-fork(void)
-{
+pid_t
+fork(void) {
   return (int)_do_syscall(SYS_FORK, 0, 0, 0, 0, 0, 0);
 }
 
 int
-execve(const char *path, const char **argv, const char **envp)
-{
+execve(const char *path, const char **argv, const char **envp) {
   return (int)_do_syscall(SYS_EXECVE, (size_t)path, (size_t)argv, (size_t)envp, 0, 0, 0);
 }
 
 __attribute__((noreturn)) void
-exit(size_t code)
-{
-  _do_syscall(SYS_EXIT, code, 0, 0, 0, 0, 0);
+exit(int status) {
+  _do_syscall(SYS_EXIT, (size_t)status, 0, 0, 0, 0, 0);
 }
 
-long int
-wait(void)
-{
-  return (long int)_do_syscall(SYS_WAIT, 0, 0, 0, 0, 0, 0);
+pid_t
+wait(int *wstatus) {
+  return (pid_t)_do_syscall(SYS_WAIT, (size_t)wstatus, 0, 0, 0, 0, 0);
+}
+
+pid_t
+waitpid(pid_t pid, int *wstatus, int options) {
+    // TODO: wait4 not yet implemented kernel level
+    return wait(wstatus);
 }
 
 int
-set_fg_proc(uint32_t pid)
-{
-  return (int)_do_syscall(SYS_SET_FG_PROC, pid, 0, 0, 0, 0, 0);
+set_fg_proc(pid_t pid) {
+  return (pid_t)_do_syscall(SYS_SET_FG_PROC, pid, 0, 0, 0, 0, 0);
 }
 
 /* stdio.h */
@@ -120,11 +122,10 @@ memset (void *s, int c, size_t n)
 }
 
 /* stack canaries */
-
-/* this is the function called when the canary is overwritten */
+// this is the function called when the canary is overwritten
 __attribute__((noreturn))
 void __stack_chk_fail(void)
 {
   write(1, "stack smashing detected\n", 24);
-  exit(-1);
+  exit(1);
 }
