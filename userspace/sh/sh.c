@@ -27,7 +27,7 @@ parse_and_execute(const char *buf, size_t n)
     // set child as the foreground process
     set_fg_proc(pid);
     // wait for child to finish
-    wait(NULL);
+    waitpid(pid, NULL, 0);
   }
   else
   {

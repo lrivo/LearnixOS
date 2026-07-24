@@ -76,13 +76,12 @@ exit(int status) {
 
 pid_t
 wait(int *wstatus) {
-  return (pid_t)_do_syscall(SYS_WAIT, (size_t)wstatus, 0, 0, 0, 0, 0);
+    return waitpid(-1, wstatus, 0);
 }
 
 pid_t
 waitpid(pid_t pid, int *wstatus, int options) {
-    // TODO: wait4 not yet implemented kernel level
-    return wait(wstatus);
+    return (pid_t)_do_syscall(SYS_WAIT, (size_t)pid, (size_t)wstatus, (size_t)options, 0, 0, 0);
 }
 
 int
