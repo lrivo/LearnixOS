@@ -21,6 +21,8 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_MUNMAP] = sys_munmap,
   [SYS_PIPE] = sys_pipe,
   [SYS_YIELD] = sys_yield,
+  [SYS_DUP] = sys_dup,
+  [SYS_DUP2] = sys_dup2,
   [SYS_GETPID] = sys_getpid,
   [SYS_FORK] = sys_fork,
   [SYS_EXECVE] = sys_execve,
@@ -99,6 +101,71 @@ sys_close (struct intr_trap_frame *tf) {
             arch_cpu_get()->proc->fds[fd] = NULL;
         }
     }
+}
+
+/* The dup() system call allocates a new file descriptor that refers to the same
+ * open file descriptor oldfd. The new file descriptor is guaranteed to be the
+ * lowest-numbered file descriptor that was unused by the calling process. */
+void
+sys_dup(struct intr_trap_frame *tf) {
+    struct process *proc = arch_cpu_get()->proc;
+    int oldfd = (int)ARG0(tf), newfd = -1;
+
+    // make sure oldfd is a valid opened file descriptor
+    if (oldfd < 0 || oldfd >= NFDS)
+        goto ebadf;   // invalid argument
+    if (!proc->fds[oldfd])
+        goto ebadf;   // oldfd is closed
+
+    // oldfd is valid, now we find the lowest unused file descriptor
+    for (int i = 0; i < NFDS; i++) {
+        if (!proc->fds[i]) { newfd = i; break; };
+    }
+
+    // we found a suitable file descriptor
+    if (newfd != -1) {
+        proc->fds[oldfd]->refcount++;
+        proc->fds[newfd] = proc->fds[oldfd];
+    }
+    RET(tf) = newfd;
+    return;
+
+    // == errors ==
+ebadf:
+    RET(tf) = -EBADF;
+}
+
+/* The dup2() system call performs the same task as dup(), but instead of
+ * using the lowest-numbered unused file descriptor, it uses newfd. In other
+ * words, newfd is adjousted to refer to oldfd, and the two can be used interchangeably.
+ * If newfd was previously open, it is silently closed before being reused. */
+void
+sys_dup2(struct intr_trap_frame *tf) {
+    struct process *proc = arch_cpu_get()->proc;
+    int oldfd = (int)ARG0(tf), newfd = ARG1(tf);
+
+    // make sure oldfd is valid and open
+    if (oldfd < 0 || oldfd >= NFDS) goto ebadf;
+    if (!proc->fds[oldfd]) goto ebadf;
+
+    // make sure newfd is valid
+    if (newfd < 0 || newfd >= NFDS) goto ebadf;
+
+    // silently close newfd if already open and different from oldfd
+    if (proc->fds[newfd] && newfd != oldfd) {
+        kprintf("sys_dup2 -> closing newfd\n");
+        file_close(proc->fds[newfd]);
+    }
+
+    proc->fds[oldfd]->refcount++;
+    proc->fds[newfd] = proc->fds[oldfd];
+
+    RET(tf) = newfd;
+    return;
+
+    // == errors ==
+ebadf:
+    RET(tf) = -EBADF;
 }
 
 void

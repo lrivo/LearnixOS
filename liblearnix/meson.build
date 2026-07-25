@@ -16,6 +16,7 @@ liblearnix_nasm_args = [
 liblearnix_src = files(
   'liblearnix.c',
   'printf.c',
+  'string.c',
   'liblearnix.asm',
 )
 liblearnix_src += cc_runtime_dep

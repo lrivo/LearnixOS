@@ -15,6 +15,8 @@
 #define SYS_MUNMAP 11
 #define SYS_PIPE 22
 #define SYS_YIELD 24
+#define SYS_DUP 32
+#define SYS_DUP2 33
 #define SYS_GETPID 39
 #define SYS_GETPPID 40
 #define SYS_FORK 57
@@ -43,6 +45,8 @@ void sys_mmap (struct intr_trap_frame *tf);
 void sys_munmap (struct intr_trap_frame *tf);
 
 void sys_yield (struct intr_trap_frame *tf);
+void sys_dup (struct intr_trap_frame *tf);
+void sys_dup2 (struct intr_trap_frame *tf);
 void sys_pipe (struct intr_trap_frame *tf);
 void sys_getpid (struct intr_trap_frame *tf);
 void sys_getppid (struct intr_trap_frame *tf);

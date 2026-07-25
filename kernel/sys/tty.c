@@ -2,28 +2,20 @@
 #include <learnix/tty.h>
 #include <learnix/fs.h>
 #include <learnix/lib/string.h>
-#include <learnix/lib/kprintf.h>
-
-struct file tty_file = { 0 };
-struct file_ops tty_ops = { 0 };
 
 // the global tty always in canonical mode
 struct tty_ctx tty0 = { 0 };
 
+// vtables for stdin and stdout (see main.c)
+struct file_ops tty_ops_r = { 0 };
+struct file_ops tty_ops_w = { 0 };
+
 void
 tty_init(void (*putchar)(char c))
 {
-  // fill the TTY file's vtable
-  tty_ops.read = tty_read;
-  tty_ops.write = tty_write;
-
-  // initialize the TTY file
-  tty_file.ptr = &tty0;
-  tty_file.ops = &tty_ops;
-
-  kprintf("%p\n", tty_file.ops);
-  kprintf("%p\n", tty_file.ops->read);
-  kprintf("%p\n", tty_file.ops->write);
+  // TODO: tty_close(), should free the struct tty_ctx
+  tty_ops_r.read = tty_read;
+  tty_ops_w.write = tty_write;
 
   // just setup tty0's putchar function pointer
   tty0.putchar = putchar;
@@ -38,14 +30,14 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     tty->edit_buf[tty->edit_idx++] = '\n';
     tty->lines++;
     tty->putchar(c);	// echo to screen
-    
+
     /* Wakes up all the processes sleeping on a read()
        syscall by setting their state to READY.
-       So that, at the next timer interrupt, they will be run */ 
-    wake_up(&tty->read_q); 
+       So that, at the next timer interrupt, they will be run */
+    wake_up(&tty->read_q);
     return;
   }
-  
+
   // FIXME: CTR+C should send a SIGINT signal to the foreground process
   // instead of killing it directly
   if (c == 0x03)
@@ -67,7 +59,7 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     tty->lines = 0;
     return;
   }
-  
+
   /* Echo printable chars on screen (to see what you type) */
   if (tty->edit_idx < TTY_BUF_LEN - 1)
   {
@@ -94,7 +86,7 @@ tty_read(struct file *f, void *buf, size_t count)
 
   // copy into buf (sys_read has already validated it)
   memcpy((void*)buf, (void*)tty->edit_buf, n);
- 
+
   // mark the line as consumed
   tty->edit_idx = 0;
   tty->lines = 0;
@@ -110,6 +102,6 @@ tty_write(struct file *f, void *buf, size_t count)
 
   for (size_t i = 0; i < count; i++)
     tty->putchar(buff[i]);
-       
+
   return count;
 }

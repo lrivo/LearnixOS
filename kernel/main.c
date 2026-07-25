@@ -1,4 +1,3 @@
-#include "learnix/arch/types.h"
 #include "learnix/lib/elf.h"
 #include "learnix/lib/limine_module.h"
 #include <learnix/lib/rand.h>
@@ -65,6 +64,11 @@ __attribute__ ((used,
                 section (".limine_requests_end"))) static volatile uint64_t
     limine_requests_end_marker[] = LIMINE_REQUESTS_END_MARKER;
 
+// external declarations
+extern struct tty_ctx tty0;
+extern struct file_ops tty_ops_r;
+extern struct file_ops tty_ops_w;
+
 // memlayout.h global variables needed for translations
 vaddr_t hhdm_offset, kernel_virt_base;
 paddr_t kernel_phys_base;
@@ -74,6 +78,13 @@ _putchar (char c)
 {
   serial_putchar (c);
   console_putchar (c);
+}
+
+/* This is the kernel idle process. For now just spins forever. */
+static void
+kidle(void) {
+    arch_interrupts_enable();
+    arch_cpu_hcf();
 }
 
 /* Kernel's entrypoint function as defined by the linker script.
@@ -113,8 +124,8 @@ kmain (void)
   struct console_fb_info fb_info = { framebuffer->address, framebuffer->width,
                                      framebuffer->height, framebuffer->pitch };
   console_init (fb_info);
- 
-  // Initialize the TTY 	
+
+  // Initialize the TTY
   tty_init(console_putchar);
 
   // Initialize the virtual memory manager
@@ -146,20 +157,16 @@ kmain (void)
 
   // Initialize the PS/2 keyboard
   ps2kb_init ();
-  
+
   // Initialize the init process (PID 1)
-  extern struct file tty_file;
   struct process *init = proc_create();
-  // TODO: make 0 read only and 1 write only
-  init->fds[0] = &tty_file; 
-  init->fds[1] = &tty_file;
-  tty_file.refcount = 2;
+  init->fds[0] = file_alloc(&tty0, &tty_ops_r);  // stdin
+  init->fds[1] = file_alloc(&tty0, &tty_ops_w);  // stdout
   struct elf64_hdr *elf = (struct elf64_hdr*)limine_module_get("/boot/init");
   elf_load(elf, init->pgtable);
   arch_proc_init(init, elf->e_entry, USR_STACK + PGSIZE);
   sched_enqueue(init);
-  
+
   // Done, the kernel idle process will spin here forever
-  arch_interrupts_enable ();
-  arch_cpu_hcf ();
+  kidle();
 }

@@ -10,6 +10,9 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#define stdin 0
+#define stdout 1
+
 // ===== TINY PRINTF =====
 /**
  * Output a character to a custom device like UART, used by the printf()

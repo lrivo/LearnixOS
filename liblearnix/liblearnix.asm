@@ -7,10 +7,10 @@ section .text
 extern main
 global _start
 _start:
-  xor rbp, rbp  
+  xor rbp, rbp
   xor rdi, rdi  ; ignore argc
   xor rsi, rsi  ; ignore argv
-  
+
   ; call C code's main() function
   call main
 

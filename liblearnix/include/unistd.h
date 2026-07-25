@@ -9,6 +9,8 @@ pid_t getpid(void);
 pid_t getppid(void);
 
 int pipe(int pipefd[2]);
+int dup(int oldfd);
+int dup2(int oldfd, int newfd);
 
 pid_t fork(void);
 int execve(const char* pathname, const char** argv, const char **envp);

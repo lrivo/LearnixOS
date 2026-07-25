@@ -45,6 +45,16 @@ pipe(int pipefd[2]) {
 }
 
 int
+dup(int oldfd) {
+    return (int)_do_syscall(SYS_DUP, (size_t)oldfd, 0, 0, 0, 0, 0);
+}
+
+int
+dup2(int oldfd, int newfd) {
+    return (int)_do_syscall(SYS_DUP2, (size_t)oldfd, (size_t)newfd, 0, 0, 0, 0);
+}
+
+int
 yield(void) {
     return (int)_do_syscall(SYS_YIELD, 0, 0, 0, 0, 0, 0);
 }
@@ -91,33 +101,8 @@ set_fg_proc(pid_t pid) {
 
 /* stdio.h */
 void _putchar(char character) {
-    // TODO: will need some sort of buffering
+    // TODO: buffering
     write(1, &character, 1);
-}
-
-/* strings.h */
-int
-strcmp(const char *s1, const char *s2)
-{
-  while (*s1 && (*s1 == *s2))
-  {
-    s1++; s2++;
-  }
-  return *(const unsigned char*)s1 - *(const unsigned char*)s2;
-}
-
-void *
-memcpy (void *restrict dest, const void *restrict src, size_t n)
-{
-  asm volatile ("rep movsb" : "+D"(dest), "+S"(src), "+c"(n)::"memory");
-  return dest;
-}
-
-void *
-memset (void *s, int c, size_t n)
-{
-  asm volatile ("rep stosb" ::"D"(s), "a"(c), "c"(n) : "cc", "memory");
-  return s;
 }
 
 /* stack canaries */
