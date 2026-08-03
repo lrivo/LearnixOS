@@ -2,4 +2,4 @@
 #include <learnix/types.h>
 #include <limine.h>
 
-vaddr_t limine_module_get(const char *path);
+struct limine_file *limine_module_get(const char *path);

@@ -6,7 +6,7 @@ __attribute ((
     section (".limine_requests"))) static volatile struct limine_module_request
     module_request = { .id = LIMINE_MODULE_REQUEST_ID, .revision = 5 };
 
-vaddr_t
+struct limine_file*
 limine_module_get(const char *path)
 {
   struct limine_module_response *modules = module_request.response;
@@ -16,9 +16,7 @@ limine_module_get(const char *path)
   {
     file = modules->modules[i];
     if (strcmp(path, file->path) == 0)
-    {
-      return (vaddr_t)file->address;
-    }
+      return file;
   }
 
   return 0;

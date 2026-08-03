@@ -17,7 +17,12 @@ sys_execve (struct intr_trap_frame *tf)
   struct elf64_hdr *elf;                            // ELF header
 
   // get the ELF file
-  elf = (struct elf64_hdr*)limine_module_get((const char*)ARG0(tf));
+  struct limine_file *f = limine_module_get((const char*)ARG0(tf));
+  if (!f) {
+    ret = -1;
+    goto bad;
+  }
+  elf = (struct elf64_hdr*)f->address;
 
   // validate the ELF program
   ret = elf_validate (elf);

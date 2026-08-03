@@ -1,6 +1,5 @@
 #include <learnix/cpu.h>
 #include <learnix/lib/string.h>
-#include <learnix/lib/kprintf.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
 #include <learnix/syscall.h>
@@ -20,7 +19,6 @@ ssize_t pipe_read
     struct pipe *pipe;
     size_t n;
 
-    kprintf("pipe_read\n");
     pipe = (struct pipe*)f->ptr;
 
     // pipe is empty with at least one writer
@@ -48,7 +46,6 @@ ssize_t pipe_write
     struct pipe *pipe;
     size_t n;
 
-    kprintf("pipe_write\n");
     pipe = (struct pipe*)f->ptr;
 
     // pipe has no readers
@@ -74,7 +71,6 @@ ssize_t pipe_write
 
 int pipe_close
 (struct file *f) {
-    kprintf("pipe_close\n");
     struct pipe* pipe = (struct pipe*)f->ptr;
 
     if (f->ops == &pipe_read_fops) {
@@ -89,7 +85,6 @@ int pipe_close
     }
 
     if (pipe->nreaders == 0 && pipe->nwriters == 0) {
-        kprintf("kfree(pipe)");
         kfree(pipe);
     }
 

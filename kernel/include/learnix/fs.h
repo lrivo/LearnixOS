@@ -21,13 +21,13 @@ struct file_ops
     int     (*close)(struct file *f);
 };
 
-
-/* A disk inode. Could be cached in memory. */
+/* A ramfs file */
 struct inode
 {
-    #define INODE_CACHED 1
-    uint32_t flags;
+    vaddr_t data;   // actual bytes of the file
+    uint64_t size;  // siize of the file
     uint32_t inum;
+    uint32_t refcount;
 };
 
 // ==== FILE ==== //
@@ -36,3 +36,9 @@ struct file *file_alloc(void *ptr, struct file_ops *ops);
 
 /* Decrements the refcount and kfree(f) if it reaches zero. */
 int file_close(struct file* f);
+
+// ==== INODE ==== //
+struct inode* inode_create(const char* path);
+ssize_t inode_read(struct file *f, void *buf, size_t count);
+ssize_t inode_write(struct file *f, void *buf, size_t count);
+int inode_close(struct file *f);

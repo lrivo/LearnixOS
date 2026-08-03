@@ -81,7 +81,36 @@ sys_write (struct intr_trap_frame *tf)
 
 void
 sys_open(struct intr_trap_frame *tf) {
-    RET(tf) = -1;   // NOT IMPLEMENTED
+    const char* pathname = (const char*)ARG0(tf);
+    struct process *proc;
+    int fd;
+    
+    struct inode *inode = inode_create(pathname);
+    kprintf("inode at %p with inum %u\n", inode, inode->inum);
+    kprintf("file data at %p with size %lu\n", inode->data, inode->size);
+    if (inode) {
+        // find the lowest unused file descriptor
+        proc = arch_cpu_get()->proc;
+        for (fd = 0; fd < NFDS; fd++) {
+            if (!proc->fds[fd]) break;
+        }
+
+        // no more fds
+        if (fd == NFDS) {
+            RET(tf) = -2;
+            return;
+        }
+        
+        extern struct file_ops inode_ramfs_ops;
+        proc->fds[fd] = file_alloc(inode, &inode_ramfs_ops);
+        if (!proc->fds[fd])
+            RET(tf) = -3;
+        else
+            RET(tf) = fd;
+        return;
+    }
+
+    RET(tf) = -1;
 }
 
 void

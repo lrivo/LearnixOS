@@ -20,6 +20,8 @@ for input_file in "$@"; do
     cp -v "$input_file" "$ISO_DIR/boot/${filename%.elf}"
 done
 
+echo "Hello World" >> $ISO_DIR/boot/ciao.txt
+
 # Copy Limine config and assets
 cp -v "$SOURCE_ROOT/limine.conf"                    "$ISO_DIR/boot/limine/"
 cp -v "$SOURCE_ROOT/deps/limine/limine-bios.sys"    "$ISO_DIR/boot/limine/"
