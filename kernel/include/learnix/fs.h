@@ -5,7 +5,8 @@
 struct file
 {
     // internal offset, not used by TTY
-    uint32_t offset;
+    uint64_t offset;
+    uint32_t flags;
     uint32_t refcount;
     // underlying object (eg: tty, inode, pipe, ...)
     void *ptr;
@@ -19,6 +20,7 @@ struct file_ops
     ssize_t (*read)(struct file *f, void *buf, size_t count);
     ssize_t (*write)(struct file *f, void *buf, size_t count);
     int     (*close)(struct file *f);
+    off_t  (*lseek)(struct file*f, off_t offset, int whence); 
 };
 
 /* A ramfs file */
@@ -42,3 +44,4 @@ struct inode* inode_create(const char* path);
 ssize_t inode_read(struct file *f, void *buf, size_t count);
 ssize_t inode_write(struct file *f, void *buf, size_t count);
 int inode_close(struct file *f);
+size_t inode_lseek(struct file *f, off_t offset, int whence);

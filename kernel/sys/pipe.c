@@ -7,11 +7,11 @@
 #include <learnix/pipe.h>
 
 static struct file_ops pipe_read_fops = {
-    .read=pipe_read, .write=NULL, .close=pipe_close
+    .read=pipe_read, .write=NULL, .close=pipe_close, .lseek = NULL
 };
 
 static struct file_ops pipe_write_fops = {
-    .read=NULL, .write=pipe_write, .close=pipe_close
+    .read=NULL, .write=pipe_write, .close=pipe_close, .lseek = NULL
 };
 
 ssize_t pipe_read

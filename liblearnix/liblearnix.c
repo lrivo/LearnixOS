@@ -27,6 +27,11 @@ close(int fd) {
     return (int)_do_syscall(SYS_CLOSE, (size_t)fd, 0, 0, 0, 0, 0);
 }
 
+off_t
+lseek(int fd, off_t offset, int whence) {
+  return (off_t)_do_syscall(SYS_LSEEK, (size_t)fd, (size_t)offset, (size_t)whence, 0, 0, 0);
+}
+
 void*
 mmap(void *addr, size_t length, int prot, int flags)
 {

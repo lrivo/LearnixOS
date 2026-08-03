@@ -1,4 +1,5 @@
 #include <learnix/fs.h>
+#include <learnix/syscall.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
@@ -6,7 +7,7 @@
 
 /* File Operations table for the inode ramfs */
 struct file_ops inode_ramfs_ops = {
-    .read = inode_read, .write = NULL, .close = inode_close
+    .read = inode_read, .write = NULL, .close = inode_close, .lseek = inode_lseek
 };
 
 /* File Operations implementation. */
@@ -48,6 +49,34 @@ int inode_close
         return 1;
     }
     return 0;
+}
+
+off_t inode_lseek
+(struct file *f, off_t offset, int whence) {
+    struct inode *inode = (struct inode*)f->ptr;
+
+    switch (whence) {
+        case SEEK_SET: {
+            if (f->offset < 0)
+                goto bad;
+            f->offset = offset;
+            break;
+        }
+        case SEEK_CURR: {
+            f->offset += offset;
+            break;
+        }
+        case SEEK_END: {
+            f->offset = inode->size + offset;
+            break;
+        }
+        default:
+            goto bad;
+    }
+    return f->offset;
+
+bad:
+    return -1;
 }
 
 /* === */

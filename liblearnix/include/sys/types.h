@@ -10,3 +10,4 @@
 
 typedef int64_t ssize_t;
 typedef int pid_t;
+typedef uint64_t off_t;

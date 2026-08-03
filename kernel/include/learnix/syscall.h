@@ -11,6 +11,7 @@
 #define SYS_WRITE 1
 #define SYS_OPEN 2
 #define SYS_CLOSE 3
+#define SYS_LSEEK 8
 #define SYS_MMAP 9
 #define SYS_MUNMAP 11
 #define SYS_PIPE 22
@@ -34,6 +35,11 @@ void sys_read (struct intr_trap_frame *tf);
 void sys_write (struct intr_trap_frame *tf);
 void sys_open (struct intr_trap_frame *tf);
 void sys_close (struct intr_trap_frame *tf);
+
+#define SEEK_SET 0
+#define SEEK_CURR 1
+#define SEEK_END 2
+void sys_lseek (struct intr_trap_frame *tf);
 
 #define PROT_NONE (1 << 0U)
 #define PROT_READ (1 << 1U)

@@ -17,6 +17,7 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_WRITE] = sys_write,
   [SYS_OPEN] = sys_open,
   [SYS_CLOSE] = sys_close,
+  [SYS_LSEEK] = sys_lseek,
   [SYS_MMAP] = sys_mmap,
   [SYS_MUNMAP] = sys_munmap,
   [SYS_PIPE] = sys_pipe,
@@ -28,6 +29,7 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_EXECVE] = sys_execve,
   [SYS_EXIT] = sys_exit,
   [SYS_WAIT] = sys_wait,
+  /* --- non POSIX syscalls --- */
   [SYS_SET_FG_PROC] = sys_set_fg_proc
 };
 
@@ -130,6 +132,27 @@ sys_close (struct intr_trap_frame *tf) {
             arch_cpu_get()->proc->fds[fd] = NULL;
         }
     }
+}
+
+void
+sys_lseek(struct intr_trap_frame *tf) {
+    int fd = (int)ARG0(tf);
+
+    if (fd < 0 || fd >= NFDS) {
+        RET(tf) = -EBADF;
+    } else {
+        struct file* f = arch_cpu_get()->proc->fds[fd];
+        if (!f) {
+            RET(tf) = -EBADF;
+        } else {
+            if (f->ops->lseek) {
+                RET(tf) = f->ops->lseek(f, (off_t)ARG1(tf), (int)ARG2(tf));
+            } else {
+                RET(tf) = -EBADF;   // not seekable file
+            }
+        }
+    }
+
 }
 
 /* The dup() system call allocates a new file descriptor that refers to the same

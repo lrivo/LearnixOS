@@ -8,3 +8,5 @@
 #include <learnix/arch/types.h>
 
 typedef uint32_t pid_t; // Process IDentifier
+
+typedef uint64_t off_t; // File Offset
