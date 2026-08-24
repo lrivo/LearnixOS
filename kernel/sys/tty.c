@@ -38,6 +38,13 @@ tty_line_discipline(struct tty_ctx *tty, char c)
     return;
   }
 
+  // FIXME: screen clear
+  if (c == 0x02) {
+    tty->edit_idx = 0;
+    tty->lines = 0;
+    tty->putchar(c);
+  }
+
   // FIXME: CTR+C should send a SIGINT signal to the foreground process
   // instead of killing it directly
   if (c == 0x03)

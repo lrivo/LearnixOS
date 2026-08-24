@@ -8,9 +8,10 @@ void
 parse_and_execute(const char *buf, size_t n)
 {
   char cmd[64] = "/boot/";
+  size_t i;
 
   // extract the first word
-  for (size_t i = 0; i < n; i++)
+  for (i = 0; i < n; i++)
   {
     if (buf[i] == ' ' || buf[i] == '\n')
     {
@@ -18,6 +19,15 @@ parse_and_execute(const char *buf, size_t n)
       break;
     }
     cmd[6+i] = buf[i];
+  }
+
+  // ignore empty line
+  if (i == 0) return;
+  
+  // built-in
+  if (strcmp(cmd+6, "clear") == 0) {
+    write(stdout, "\02", 1);
+    return;
   }
 
   // execute it as a child process

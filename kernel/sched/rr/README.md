@@ -1,6 +1,6 @@
 # sched/rr: Round Robin
 
-## Overwiew
+## Overview
 Round Robin is the simplest preemptive scheduling algorithm.<br>
 Every runnable process is given an equal, fixed time slice called a **quantum**. 
 When the quantum expires the process is preempted and moved to the back of the queue, and the next process runs.<br>

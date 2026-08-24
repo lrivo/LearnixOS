@@ -5,8 +5,13 @@
   - [x] TTY's stdin and stdout 
   - [] actual on-disk files
   - [x] pipe() syscall
+  - [x] dup() and dup2() syscalls
+  - [x] lseek()
 - [x] mmap() syscall
   - [x] munmap() syscall
+- [] VMM needs some sort of vm_area instead of just page tables to represent things like lazy mappings and file-backed mappings
+    - [] CoW fork
+- [] VirtIO block driver
 
 # Components
 - linked-list based PMM
@@ -24,10 +29,11 @@
 - CPU
     - arch_cpu_get() should be replaced with some shorter macro
     - struct cpu should probably contain the runqueue for SMP reasons
-    - amd64 CPUID parsing is never used at all
+    - RDSEED support should be checked via CPUID (for now I disabled RDSEED completely to test on an old laptop)
 
 # Security
 - [x] stack canaries in userspace
+    - the kernel hardcodes them, correct behaviour dictates that the libc does it
 - ASLR in userspace
     - a mess, since it requires loading position indipendent code
 - KASLR (enable in Limine and compile kernel as PIC)

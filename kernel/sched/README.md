@@ -1,6 +1,6 @@
 # sched/ - Scheduler Subsystem
 
-## Overwiew
+## Overview
 A modern personal computer has one CPU (with multiple physical/logical cores) that must be shared between hundreds of processes.
 Obviously a CPU core can only execute one process at any given time and so, to give the **illusion that many processes are running at the same time**we use the scheduler to "time share" the CPU and context switch between them.
 

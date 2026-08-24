@@ -71,6 +71,10 @@ console_putchar (char c)
 {
   switch (c)
   {
+  case 0x02: {
+    console_scroll();
+    break;
+  }
   case '\n':
   {
     ctx.cursor_x = 0;
