@@ -4,7 +4,11 @@
 
 /* Linux syscall errors (they are returned negated) */
 #define EBADF 9     // bad file descriptor
+#define EFAULT 14   // invalid address
 #define EPIPE 32    // broken pipe
+
+/* Maximum path length accepted by path-taking syscalls (open, execve) */
+#define PATH_MAX 128
 
 /* Linux syscall numbers */
 #define SYS_READ 0

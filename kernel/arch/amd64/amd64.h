@@ -1,6 +1,22 @@
 #pragma once
 #include <learnix/arch/types.h>
 
+/* Read the CR4 control register. */
+inline uint64_t
+rcr4 (void)
+{
+  uint64_t val;
+  asm volatile ("mov %%cr4,%0" : "=r"(val));
+  return val;
+}
+
+/* Write the CR4 control register. */
+inline void
+wcr4 (uint64_t val)
+{
+  asm volatile ("mov %0,%%cr4" ::"r"(val) : "memory");
+}
+
 /* Read MSR (Model Specific Register). */
 inline uint64_t
 rdmsr (uint32_t msr)

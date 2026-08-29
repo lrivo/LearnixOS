@@ -4,10 +4,12 @@
 #include "ioapic.h"
 #include "lapic.h"
 #include <learnix/cpu.h>
+#include <learnix/syscall.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
 #include <learnix/lib/rand.h>
 #include <learnix/mm/kmalloc.h>
+#include <learnix/arch/memlayout.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -24,11 +26,30 @@ cpuid (uint32_t code, uint32_t *eax, uint32_t *ebx, uint32_t *ecx,
 void
 arch_stage_1 ()
 {
+  uint32_t eax, ebx, ecx, edx;
+  uint64_t cr4;
+
+  /* initialize a GDT and a minimal IDT just to catch
+   * early exceptions */
   gdt_init ();
   idt_init ();
   
   // enable the NX bit
   wrmsr (0xC0000080, rdmsr(0xC0000080) | (1ULL << 11));
+
+  // enable SMEP and SMAP (if possible)
+  cpuid(7, &eax, &ebx, &ecx, &edx);
+
+  cr4 = rcr4();
+  if (ebx & (1 << 7)) {
+    cr4 |= (1 << 20);
+    kprintf("[INFO] SMEP enabled\n");
+  }
+  if (ebx & (1 << 20)) {
+    cr4 |= (1 << 21);
+    kprintf("[INFO] SMAP enabled\n");
+  }
+  wcr4(cr4);
 }
 
 void
@@ -94,13 +115,56 @@ arch_cpu_identify (struct cpu_info *c)
   c->va_bits_max = (eax >> 8) & 0xFF; // 15:8
 }
 
+ssize_t arch_copy_from_user
+(void *dest, void *src, size_t n) {
+    if (!IS_KVADDR(dest) || !IS_USRADDR(src))
+        return -EFAULT;
+    
+    asm volatile ("stac" ::: "cc");
+    memcpy(dest, src, n);
+    asm volatile ("clac" ::: "cc");
+
+    return 0;
+}
+
+ssize_t arch_copy_to_user
+(void *dest, void *src, size_t n) {
+    if (!IS_USRADDR(dest) || !IS_KVADDR(src))
+        return -EFAULT;
+    
+    asm volatile ("stac" ::: "cc");
+    memcpy(dest, src, n);
+    asm volatile ("clac" ::: "cc");
+
+    return 0;
+}
+
+// BUG: should first check that the entire userspace range is mapped
+// with the U flag
+ssize_t
+arch_strncpy_from_user (char *dst, const char *src, size_t max)
+{
+    /* copy byte-by-byte so we never read past the string's
+     * last page in userspace */
+    asm volatile ("stac" ::: "cc");
+    for (size_t i = 0; i < max; i++) {
+        if (src[i] != '\0') {
+            dst[i] = src[i];
+        } else {
+            asm volatile ("clac" ::: "cc");
+            return (ssize_t)i;
+        }
+    }
+
+    asm volatile ("clac" ::: "cc");
+    return -EFAULT;
+}
+
 void
 arch_cpu_hcf ()
 {
   for (;;)
-  {
     asm volatile ("hlt");
-  }
 }
 
 extern int rdseed_u64(uint64_t* out);

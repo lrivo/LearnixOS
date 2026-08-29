@@ -1,9 +1,13 @@
 #include <learnix/fs.h>
+#include <learnix/cpu.h>
 #include <learnix/syscall.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/limine_module.h>
+
+/* System-wide table of opened inodes, that can be reused by many file structs. */
+static struct inode *itable[10] = { 0 };
 
 /* File Operations table for the inode ramfs */
 struct file_ops inode_ramfs_ops = {
@@ -25,12 +29,12 @@ ssize_t inode_read
         ? count
         : inode->size - f->offset;
     
-    //kprintf("inode_read: copying %lu bytes from %p\n", n, inode->data);
-    //kprintf("userspace buffer at %p and %d\n", buf, (int)count);
     // to the copy and advance the pointer
-    memcpy(buf, (void*)(inode->data + f->offset), n);
+    ssize_t r = arch_copy_to_user(buf, (void*)(inode->data + f->offset), n); 
+    if (r < 0)
+	return r;
+
     f->offset += n;
-    
     return (ssize_t)n;
 }
 
@@ -45,6 +49,11 @@ int inode_close
 (struct file *f) {
     struct inode *inode = (struct inode*)f->ptr;
     if (--inode->refcount == 0) {
+        // remove from the itable
+        for (int i = 0; i < 10; i++) {
+            if (itable[i] == inode) itable[i] = NULL;
+        } 
+        // and then free the heap memory 
         kfree(inode);
         return 1;
     }
@@ -78,9 +87,6 @@ off_t inode_lseek
 bad:
     return -1;
 }
-
-/* === */
-static struct inode *itable[10] = { 0 };
 
 struct inode*
 inode_create(const char *path) {

@@ -37,8 +37,8 @@ ssize_t pipe_read
 
     // read n bytes from the pipe into userspace
     // and advance the pipe's read counter
-    memcpy(buf, &pipe->buffer[pipe->nread += n], n);
-    return n;
+    ssize_t r = arch_copy_to_user(buf, &pipe->buffer[pipe->nread += n], n);
+    return r < 0 ? r : n;
 }
 
 ssize_t pipe_write
@@ -62,7 +62,9 @@ ssize_t pipe_write
 
     // copy n bytes from userspace into the pipe
     // and advance the pipe's write counter
-    memcpy(&pipe->buffer[pipe->nwrite += n], buf, n);
+    ssize_t r = arch_copy_from_user(&pipe->buffer[pipe->nwrite += n], buf, n);
+    if (r < 0)
+        return r;
 
     // wake up potential readers
     wake_up(&pipe->rq);
@@ -113,10 +115,9 @@ void sys_pipe
     struct file *fd1 = NULL, *fd2 = NULL;
     struct pipe *pipe = NULL;
     struct process *p;
-    int *pipefd, i, j;
+    int pipefd[2], i = -1, j = -1;
 
     p = arch_cpu_get()->proc;
-    pipefd = (int*)ARG0(tf);
 
     // 1. allocate the pipe's kernel data structure, zero-ed out.
     pipe = kzalloc(sizeof(struct pipe));
@@ -151,6 +152,11 @@ void sys_pipe
      * specs, if pipe() fails, it must not modify the pipefd argument. */
     pipefd[0] = i;
     pipefd[1] = j;
+
+    // publish the fds to userspace (SMAP-safe)
+    if (arch_copy_to_user((void*)ARG0(tf), pipefd, sizeof(pipefd)) < 0)
+        goto bad;
+
     RET(tf) = 0;
     return;
 

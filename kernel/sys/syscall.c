@@ -47,7 +47,7 @@ void
 sys_read (struct intr_trap_frame *tf)
 {
   int fd = (int)ARG0(tf);
-  void *buf = (void*)ARG1(tf);          // BUG: unchecked user controlled pointer
+  void *buf = (void*)ARG1(tf);          // validated by arch_copy_to_user() in the file ops
   size_t count = (size_t)ARG2(tf);
 
   // make sure fd is a valid integer [0; NFDS-1]
@@ -66,7 +66,7 @@ void
 sys_write (struct intr_trap_frame *tf)
 {
   int fd = (int)ARG0(tf);
-  void *buf = (void*)ARG1(tf);          // BUG: unchecked user controlled pointer
+  void *buf = (void*)ARG1(tf);          // validated by arch_copy_from_user() in the file ops
   size_t count = (size_t)ARG2 (tf);
 
   // make sure fd is a valid integer [0; NFDS-1]
@@ -83,11 +83,17 @@ sys_write (struct intr_trap_frame *tf)
 
 void
 sys_open(struct intr_trap_frame *tf) {
-    const char* pathname = (const char*)ARG0(tf);
+    char path[PATH_MAX];
     struct process *proc;
     int fd;
-    
-    struct inode *inode = inode_create(pathname);
+
+    // pathname is a userspace pointer: copy it into kernel memory first
+    if (arch_strncpy_from_user(path, (const char*)ARG0(tf), sizeof(path)) < 0) {
+        RET(tf) = -EFAULT;
+        return;
+    }
+
+    struct inode *inode = inode_create(path);
     kprintf("inode at %p with inum %u\n", inode, inode->inum);
     kprintf("file data at %p with size %lu\n", inode->data, inode->size);
     if (inode) {

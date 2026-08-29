@@ -92,7 +92,9 @@ tty_read(struct file *f, void *buf, size_t count)
   int n = (tty->edit_idx < count) ? tty->edit_idx : count;
 
   // copy into buf (sys_read has already validated it)
-  memcpy((void*)buf, (void*)tty->edit_buf, n);
+  ssize_t r = arch_copy_to_user((void*)buf, (void*)tty->edit_buf, n);
+  if (r < 0)
+    return r;
 
   // mark the line as consumed
   tty->edit_idx = 0;
@@ -105,10 +107,15 @@ ssize_t
 tty_write(struct file *f, void *buf, size_t count)
 {
   struct tty_ctx *tty = (struct tty_ctx*)f->ptr;
-  const char *buff = (char*)buf;
+  char c;
 
-  for (size_t i = 0; i < count; i++)
-    tty->putchar(buff[i]);
+  for (size_t i = 0; i < count; i++) {
+    ssize_t r = arch_copy_from_user(&c, (char*)buf + i, 1);
+    if (r < 0)
+      return r;
+    else
+      tty->putchar(c);
+  }
 
   return count;
 }

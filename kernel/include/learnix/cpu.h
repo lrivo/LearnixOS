@@ -50,5 +50,16 @@ struct cpu *arch_cpu_get (void);
 /* Identify the running CPU (es: cpuid on x86). */
 void arch_cpu_identify (struct cpu_info *c);
 
+/* Copies n bytes from a userspace buffer (src) into a kernel space one (dst). */
+ssize_t arch_copy_from_user(void *dest, void *src, size_t n);
+
+/* Copies n bytes from a kernel buffer (scr) into a userspace one (dst). */
+ssize_t arch_copy_to_user(void *dest, void *src, size_t n);
+
+/* Copies a NUL-terminated string from userspace (src) into a kernel
+ * buffer (dst) of at most max bytes, NUL terminator included.
+ * Returns the string length (excluding the NUL) or -EFAULT. */
+ssize_t arch_strncpy_from_user(char *dst, const char *src, size_t max);
+
 /* Halts the CPU forever */
 void arch_cpu_hcf (void);
