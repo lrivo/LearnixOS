@@ -53,6 +53,7 @@ kernel_src = files(
   'lib/limine_module.c',
   'mm/uvm.c',
   'mm/vmm.c',
+  'mm/vma.c',
   'mm/mmap.c',
   'fs/file.c',
   'fs/inode.c',

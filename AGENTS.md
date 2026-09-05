@@ -37,3 +37,11 @@ Use the `explain-*` skills for in-depth subsystem explanations.
   `kernel/arch/amd64/`. `docs/include_rules.md` explains the header split.
 - Respect the existing teaching-doc voice: why + how, with links to code.
 - Don't add code comments unless asked (project convention).
+
+## Working On
+VMA (Virtual Memory Area) implementation (sorted singly linked list):
+- [x] basic functions (alloc, free, insert, remove, search)
+- [ ] mmap/munmap rewrite
+    - best first, less moving parts than fork/exec
+    - test demand paging (map a VMA not present, then access such memory and #PF)
+- [ ] fork/exec rewrite 

@@ -172,7 +172,7 @@ pmm_init (struct limine_memmap_response *mmap)
 
   pmm_test ();
 
-  kprintf("[ INFO ] pmm_bitmap initialized\n");
+  kprintf("[INFO] pmm_bitmap initialized\n");
 }
 
 paddr_t

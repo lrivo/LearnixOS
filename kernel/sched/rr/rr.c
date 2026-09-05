@@ -19,7 +19,7 @@ sched_init ()
   arch_cpu_get()->proc = sentinel;
   arch_cpu_get()->proc_need_resched = true;
 
-  kprintf("[INFO] round robin scheduler ready\n");
+  kprintf("[INFO] sched_rr ready\n");
 }
 
 struct process *
