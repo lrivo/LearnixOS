@@ -25,14 +25,14 @@ vma_free(struct vm_area *vma) {
 int
 vma_insert(struct vm_area **head, struct vm_area *vma) {
     if (!head || !vma)
-        return -1;
+        return 0;
 
     while (*head && vma->start > (*head)->end) {
         head = &((*head)->next);
     }
     vma->next = *head;
     *head = vma;
-    return 0;
+    return 1;
 }
 
 int
@@ -44,24 +44,24 @@ vma_remove(struct vm_area **head, struct vm_area *vma) {
     while (*head && *head != vma) {
         // exit early if the end of vma is less than start of current entry
         if ((*head)->start > vma->end)
-            return -1;
+            return 0;
         // otherwise, advance
         head = &((*head)->next);
     }
 
     if (!*head)
-        return -1;
+        return 0;
     
     /* this works before *head is pointing to prev->next. */
     *head = (*head)->next;
-    return 0;
+    return 1;
 }
 
 struct vm_area*
 vma_search(struct vm_area *head, vaddr_t va) {
     struct vm_area *curr = head;
     while (curr) {
-        if (va >= curr->start && va <= curr->end) break; 
+        if (va >= curr->start && va < curr->end) break; 
         curr = curr->next;
     }
     return curr;

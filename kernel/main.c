@@ -91,7 +91,6 @@ kidle(void) {
   static inline void vma_print(struct vm_area *curr) {   
     while (curr) {
         kprintf("0x%p 0x%p - ", curr->start, curr->end);  
-        if (curr->flags & VMA_PRESENT) kprintf("P "); 
         if (curr->flags & VMA_READ) kprintf("R "); 
         if (curr->flags & VMA_WRITE) kprintf("W "); 
         if (curr->flags & VMA_EXEC) kprintf("X "); 
@@ -181,8 +180,8 @@ kmain (void)
   sched_enqueue(init);
 
   // TEST vma
-  struct vm_area *head = vma_alloc(0x400000, 0x400000 + 2 * PGSIZE, VMA_PRESENT | VMA_READ | VMA_EXEC);
-  vma_insert(&head, vma_alloc(0x7ffffffdd000UL, 0x7ffffffdd000UL + PGSIZE, VMA_PRESENT | VMA_READ | VMA_WRITE));
+  struct vm_area *head = vma_alloc(0x400000, 0x400000 + 2 * PGSIZE, VMA_READ | VMA_EXEC);
+  vma_insert(&head, vma_alloc(0x7ffffffdd000UL, 0x7ffffffdd000UL + PGSIZE, VMA_READ | VMA_WRITE));
   vma_print(head);
 
   kprintf("%p\n", vma_search(head, 0x400000));

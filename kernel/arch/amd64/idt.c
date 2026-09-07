@@ -7,7 +7,6 @@
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/string.h>
-
 #include <learnix/syscall.h>
 
 /* Assembly stubs defined in isr_stubs.asm that are registered directly in the
@@ -60,18 +59,37 @@ static void
 handler_page_fault (struct intr_trap_frame *tf)
 {
   vaddr_t fault;
+  uint64_t flags = 0;
   
-  // if userspace generated the fault kill the process
-  if (tf->cs & 3)
-  {
-    kprintf("PAGE FAULT: process terminated with error %lx\n", tf->error);
-    sys_exit(tf); // NOTE: this is not "killing" properly as I do not have UNIX signals
-  }
-  
-  // otherwise it was a ring 0 fault
+  // x86_64 puts the faulty virtual address in CR2
   asm volatile ("mov %%cr2,%0" : "=r"(fault));
-  kpanic ("[ PAGE FAULT ]\nRIP: %lx\nRSP: %lx\nError Code: %lx\nCR2: %p\n",
-          tf->rip, tf->rsp, tf->error, fault);
+  
+  // translates x86_64 error code into the mm_page_fault()'s one
+  if (tf->error & (1ULL << 0))
+    flags |= (1ULL << 0);
+    
+  if (tf->error & (1ULL << 1))  
+    flags |= (1ULL << 1);
+ 
+  if (tf->error & (1ULL << 2))
+    flags |= (1ULL << 2);
+
+  if (tf->error & (1ULL << 4))
+    flags |= (1ULL << 3);
+   
+  // call mm_page_fault(), the arch-independent implementation 
+  extern int mm_page_fault(vaddr_t fault, uint64_t flags);    
+  switch (mm_page_fault(fault, flags)) {
+    case 0:
+        // ring 0 fault
+        kpanic ("[ PAGE FAULT ]\nRIP: %lx\nRSP: %lx\nError Code: %lx\nCR2: %p\n", tf->rip, tf->rsp, tf->error, fault);
+    case 1:
+        // kill the current process
+        sys_exit(tf);
+        break;
+    default:
+        break;
+  } 
 }
 
 void

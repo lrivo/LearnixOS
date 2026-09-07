@@ -1,4 +1,5 @@
 #include <learnix/mm/vmm.h>
+#include <learnix/mm/pmm.h>
 #include <learnix/arch/vmm.h>
 #include <learnix/arch/memlayout.h>
 
@@ -15,18 +16,23 @@ vmm_init(void)
 int
 vmm_map(vaddr_t pgtable, vaddr_t va, paddr_t pa, int flags)
 {
-  return arch_pg_map(pgtable, va, pa, flags);
+  // passing a NULL pa automatically allocates a physical frame
+  if (pa == (vaddr_t)NULL) {
+    pa = pmm_alloc(PMM_NONE);
+  }
+  return arch_pg_map(pgtable, PGROUNDDOWN(va), pa, flags);
 }
 
 int 
 vmm_unmap(vaddr_t pgtable, vaddr_t va)
 {
-  return arch_pg_unmap(pgtable, va);
+  return arch_pg_unmap(pgtable, PGROUNDDOWN(va));
 }
 
 int
 vmm_map_range(vaddr_t pgtable, vaddr_t va, paddr_t pa, int flags, size_t n)
 {
+  va = PGROUNDDOWN(va); pa = PGROUNDDOWN(pa);
   for (size_t i = 0; i < n; i++, va += PGSIZE, pa += PGSIZE)
   {
     if (arch_pg_map(pgtable, va, pa, flags) < 0)
@@ -38,6 +44,7 @@ vmm_map_range(vaddr_t pgtable, vaddr_t va, paddr_t pa, int flags, size_t n)
 int
 vmm_unmap_range(vaddr_t pgtable, vaddr_t va, size_t n)
 {
+  va = PGROUNDDOWN(va);
   for (size_t i = 0; i < n; i++, va += PGSIZE)
   {
     if (arch_pg_unmap(pgtable, va) < 0)

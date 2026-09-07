@@ -8,10 +8,10 @@
 #include <learnix/types.h>
 
 /* Those are the values for vm_area->flags. */
-#define VMA_READ    (1UL << 0)
-#define VMA_WRITE   (1UL << 1)
-#define VMA_EXEC    (1UL << 2)
-#define VMA_PRESENT (1UL << 3)
+#define VMA_READ       (1UL << 0)
+#define VMA_WRITE      (1UL << 1)
+#define VMA_EXEC       (1UL << 2)
+#define VMA_FILEBACKED (1UL << 3)
 
 /* This struct represents a virtual memory area. */
 struct vm_area {

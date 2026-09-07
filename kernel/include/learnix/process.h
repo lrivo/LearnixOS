@@ -1,7 +1,7 @@
 #pragma once
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/process.h>
-#include <learnix/types.h>
+#include <learnix/mm/vma.h>
 #include <learnix/fs.h>
 
 #define NFDS 10
@@ -42,6 +42,9 @@ struct process
   
   /* file descriptors table for this process */
   struct file *fds[NFDS];
+  
+  /* virtual memory areas for this process */
+  struct vm_area *vma_head;
   
   /* scheduling */
   ssize_t priority;

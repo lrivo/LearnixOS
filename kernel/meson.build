@@ -54,6 +54,7 @@ kernel_src = files(
   'mm/uvm.c',
   'mm/vmm.c',
   'mm/vma.c',
+  'mm/page_fault.c',
   'mm/mmap.c',
   'fs/file.c',
   'fs/inode.c',
