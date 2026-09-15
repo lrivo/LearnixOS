@@ -11,17 +11,17 @@ schedule()
   struct process *curr = arch_cpu_get()->proc;
   struct process *next = sched_pick_next(curr);
   if (next == NULL || curr == next)
-    return; // nothing to schedule
+    return;   // nothing to reschedule
 
-  kprintfdbg("[schedule] %d -> %d\n", (int)curr->pid, (int)next->pid);
-
-  // update processes state
+  /* curr can be in any state, for example it just yielded, 
+   * we can only change his state if its currently RUNNING. */
   if (curr->state == RUNNING)
     curr->state = READY;
   next->state = RUNNING;
   arch_cpu_get ()->proc = next;
 
-  // update process's scheduling stats
+  // update scheduling stats
+  curr->sched_stats.tot_rescheds++;
   if (next->sched_stats.first_sched_tick == 0)
     next->sched_stats.first_sched_tick = ticks;
 
@@ -30,7 +30,7 @@ schedule()
 }
 
 /* Takes inspiration from Linux 0.0.1, the wait_queue node
-   is a local variable on the process' kernel stack */
+ * is a local variable on the process' kernel stack */
 void
 sleep_on(struct wait_queue **wq)
 {

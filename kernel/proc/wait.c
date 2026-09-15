@@ -34,7 +34,7 @@ sys_wait (struct intr_trap_frame *tf)
         this call since it will always run before this.
         It became a bug while writing the lottery scheduler with
         the assumption that runqueue only has running processes that
-        previously rr didn't have. */
+        previously rr didn't have (but now has). */
       sched_dequeue(child);
 
       // we've found a ZOMBIE child we can free
@@ -47,6 +47,7 @@ sys_wait (struct intr_trap_frame *tf)
 
     // BUG: if parent has no child this sleeps forever
     // no ZOMBIE child found, sleep untill one exits
+    // FIX: should pass to a linked list of child processes
     sleep_on(&parent->child_wq);
   }
 }

@@ -30,7 +30,8 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_EXIT] = sys_exit,
   [SYS_WAIT] = sys_wait,
   /* --- non POSIX syscalls --- */
-  [SYS_SET_FG_PROC] = sys_set_fg_proc
+  [SYS_SET_FG_PROC] = sys_set_fg_proc,
+  [SYS_SCHED_GET_STATS] = sys_sched_get_stats,
 };
 
 void
@@ -245,4 +246,11 @@ sys_set_fg_proc (struct intr_trap_frame *tf)
     tty0.foreground = new_fg;
     RET(tf) = new_fg->pid;
   }
+}
+
+void
+sys_sched_get_stats(struct intr_trap_frame *tf) {
+    struct process *p = arch_cpu_get()->proc;
+    arch_copy_to_user((void*)ARG0(tf), &p->sched_stats, sizeof(p->sched_stats));
+    RET(tf) = 0;
 }

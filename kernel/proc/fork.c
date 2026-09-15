@@ -12,6 +12,7 @@ sys_fork(struct intr_trap_frame *tf)
   struct process *child = proc_create();
 
   child->parent = parent;
+  child->sched_stats.creation_tick = ticks;
 
   // copy parent's userspace mappings into the child
   uvm_copy(child->pgtable, parent->pgtable);

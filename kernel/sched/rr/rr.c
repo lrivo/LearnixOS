@@ -71,7 +71,6 @@ sched_enqueue (struct process *p)
   // initialze the scheduling stats
   memset((void*)&p->sched_stats, 0, sizeof(p->sched_stats));
   p->ticks_left = RR_QUANTUM;
-  p->sched_stats.creation_tick = ticks;
   
   // insert in the runqueue
   p->next = sentinel;
