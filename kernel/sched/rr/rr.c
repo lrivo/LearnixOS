@@ -1,9 +1,10 @@
 #include "learnix/process.h"
 #include <learnix/cpu.h>
+#include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
-#include <learnix/lib/kpanic.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
+#define RR_QUANTUM 5
 
 static struct process *sentinel;
 
@@ -35,20 +36,44 @@ sched_pick_next (struct process *curr)
     if (p == curr)
       return sentinel;  // so we schedule the kernel idle
   }
+  
   return p->next;
 }
 
 void
 sched_tick (void)
 {
-  arch_cpu_get()->proc_need_resched = true;
+  // 1. update the counters
+  struct process *proc = arch_cpu_get()->proc;
+  proc->sched_stats.ticks_running++;
+  ticks++;
+  
+  kprintfdbg("[sched_tick] PID %d ticks %lu run_ticks: %lu left: %lu\n", 
+    (int)proc->pid, ticks, proc->sched_stats.ticks_running, proc->ticks_left);
+
+  // with the idle process we can try to reschedule immediately
+  if (proc == sentinel) {
+    arch_cpu_get()->proc_need_resched = true;
+  } else {
+    if (--proc->ticks_left == 0) {
+      proc->ticks_left = RR_QUANTUM;
+      arch_cpu_get()->proc_need_resched = true;
+      kprintfdbg("[sched_tick] PID %d exausted his quantum\n", (int)proc->pid);
+    }
+  }
 }
 
 void
 sched_enqueue (struct process *p)
 {
-  kassert (p != NULL && p != sentinel);
+  if (!p || p == sentinel) return;
+
+  // initialze the scheduling stats
+  memset((void*)&p->sched_stats, 0, sizeof(p->sched_stats));
+  p->ticks_left = RR_QUANTUM;
+  p->sched_stats.creation_tick = ticks;
   
+  // insert in the runqueue
   p->next = sentinel;
   p->prev = sentinel->prev;
   p->prev->next = p;
@@ -59,7 +84,6 @@ void
 sched_dequeue (struct process *p)
 {
   if (!p || p == sentinel) return;
-  
   p->prev->next = p->next;
   p->next->prev = p->prev;
 }

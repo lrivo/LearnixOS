@@ -1,3 +1,4 @@
+#include "learnix/lib/kprintf.h"
 #include "learnix/mm/vmm.h"
 #include <learnix/cpu.h>
 #include <learnix/lib/string.h>
@@ -36,4 +37,6 @@ sys_fork(struct intr_trap_frame *tf)
   // set the return values
   RET(tf) = child->pid;
   RET(child->tf) = 0;
+
+  kprintfdbg("[fork] parent %d child %d\n", (int)parent->pid, (int)child->pid);
 }

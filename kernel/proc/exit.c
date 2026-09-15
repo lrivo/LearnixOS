@@ -1,3 +1,4 @@
+#include "learnix/lib/kprintf.h"
 #include <learnix/cpu.h>
 #include <learnix/fs.h>
 #include <learnix/syscall.h>
@@ -51,6 +52,8 @@ sys_exit (struct intr_trap_frame *tf)
 
   // remove ourselves from the runqueue
   sched_dequeue(p);
+
+  kprintf("[sys_exit] PID %d\n", (int)p->pid);
 
   schedule();
 

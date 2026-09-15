@@ -2,6 +2,8 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/scheduler.h>
 
+volatile uint64_t ticks = 0;
+
 void
 schedule()
 {
@@ -11,11 +13,17 @@ schedule()
   if (next == NULL || curr == next)
     return; // nothing to schedule
 
+  kprintfdbg("[schedule] %d -> %d\n", (int)curr->pid, (int)next->pid);
+
   // update processes state
   if (curr->state == RUNNING)
     curr->state = READY;
   next->state = RUNNING;
   arch_cpu_get ()->proc = next;
+
+  // update process's scheduling stats
+  if (next->sched_stats.first_sched_tick == 0)
+    next->sched_stats.first_sched_tick = ticks;
 
   // context switch form curr to next
   arch_context_switch (curr, next);
@@ -61,6 +69,7 @@ wake_up(struct wait_queue **wq)
        * syscall. */
       if (tmp->proc->state != ZOMBIE)
       {
+        tmp->proc->sched_stats.tot_wakeups++;
         tmp->proc->state = READY;
         sched_enqueue(tmp->proc);
       }

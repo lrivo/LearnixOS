@@ -54,6 +54,14 @@ void _putchar (char character);
 int printf_ (const char *format, ...);
 
 /**
+ * Like kprintf(), but writes only to the COM1 serial console,
+ * leaving the VGA TTY untouched. Useful for debug logging that
+ * must not disturb the on-screen output (eg: benchmark runs).
+ * \param format A string that specifies the format of the output
+ */
+void kprintfdbg (const char *format, ...);
+
+/**
  * Tiny sprintf implementation
  * Due to security reasons (buffer overflow) YOU SHOULD CONSIDER USING
  * (V)SNPRINTF INSTEAD!

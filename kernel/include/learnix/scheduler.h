@@ -1,11 +1,9 @@
 #pragma once
+#include <learnix/sched_types.h>
 #include <learnix/process.h>
 
-struct wait_queue
-{
-  struct process *proc;
-  struct wait_queue *next;
-};
+// global ticks counter (defined in sched.c)
+extern volatile uint64_t ticks;
 
 /* Scheduling entrypoint, called before returning from an interrupt
  * if needed. */

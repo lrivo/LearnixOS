@@ -24,7 +24,9 @@ sched_init()
 void
 sched_tick()
 {
+  ticks++;
   arch_cpu_get()->proc_need_resched = true;
+  arch_cpu_get()->proc->sched_stats.ticks_running++;
 }
 
 /* This runs the lottery */
@@ -54,6 +56,8 @@ sched_pick_next (struct process *curr)
     current = current->next;
   }
   
+  kprintfdbg("[lottery] drawn PID %d\n", current->pid);
+
   return current;
 }
 

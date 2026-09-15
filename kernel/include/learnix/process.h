@@ -1,4 +1,5 @@
 #pragma once
+#include <learnix/sched_types.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/process.h>
 #include <learnix/mm/vma.h>
@@ -47,8 +48,10 @@ struct process
   struct vm_area *vma_head;
   
   /* scheduling */
-  ssize_t priority;
-  /* doubly-linked list runqueue */
+  struct sched_stats sched_stats; // policy-independent statistics
+  uint64_t priority;
+  uint64_t ticks_left;
+  /* runqueue */
   struct process *next;
   struct process *prev;
 };
@@ -63,6 +66,7 @@ struct process *proc_create (void);
 /* Destroys (if possible) the given process */
 void proc_destroy (struct process *p);
 
+/* Returns the PCB struct for a given pid. */
 struct process *proc_by_pid (pid_t pid);
 
 // ===== ARCH DEPENDENT CODE ====== //

@@ -56,6 +56,7 @@ sys_execve (struct intr_trap_frame *tf)
   arch_proc_exec(curr, elf->e_entry, (vaddr_t)USR_STACK + PGSIZE);
 
   // unwind the syscall stack frame
+  kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
   return;
 
   /* if the requested ELF file was bad we destroy the

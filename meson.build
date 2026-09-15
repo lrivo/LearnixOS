@@ -63,6 +63,7 @@ run_target('run',
     '-d', 'cpu_reset',
     '-enable-kvm',
     '-cpu', 'host',
+    '-serial', 'file:serial.log',
   ],
   depends: iso_target
 )
