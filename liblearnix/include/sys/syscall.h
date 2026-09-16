@@ -19,6 +19,7 @@
 #define SYS_EXIT 60
 #define SYS_WAIT 61
 #define SYS_SET_FG_PROC 62
+#define SYS_SCHED_GET_STATS 63
 
 int set_fg_proc(pid_t pid);
 

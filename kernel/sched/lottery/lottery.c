@@ -35,7 +35,7 @@ sched_pick_next (struct process *curr)
 {
   // the lottery does not care about current process
   (void)curr;
-  
+
   /* if the runqueue is empty we can only schedule the
      kernel idle process */
   if (tot_tickets == 0)
@@ -45,7 +45,7 @@ sched_pick_next (struct process *curr)
   size_t winner, cnt = 0;
   rand_bytes(&winner, sizeof(winner));
   winner = winner % tot_tickets;
-  
+
   /* traverse the runqueue from the start. */
   struct process *current = runqueue;
   while (current != NULL)
@@ -55,7 +55,7 @@ sched_pick_next (struct process *curr)
       break;  // current is the winner
     current = current->next;
   }
-  
+
   kprintfdbg("[lottery] drawn PID %d\n", current->pid);
 
   return current;

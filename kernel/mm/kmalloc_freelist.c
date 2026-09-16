@@ -24,13 +24,18 @@ kmalloc_init(vaddr_t heap_start, size_t heap_size)
 {
   (void)heap_size;
 
+  for (int i = 0; i < 10; i++) {
+      vmm_map(
+        vmm_get_kern_pgtable(), heap_start + (i * 4096), pmm_alloc(PMM_ZERO), VMM_FLAG_WRITE
+      );
+  }
+
   // memory map a 4KB page initially
-  vmm_map(vmm_get_kern_pgtable(), heap_start, pmm_alloc(PMM_ZERO), VMM_FLAG_WRITE);
   
   // initialize the freelist
   struct chunk *freelist = (struct chunk*)heap_start;
   freelist->flags = 0;
-  freelist->size =  4096 - sizeof(struct chunk) + 8;
+  freelist->size =  (10 * 4096) - sizeof(struct chunk) + 8;
   freelist->next = NULL;
 
   // initial heap_state

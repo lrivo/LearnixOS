@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sched.h>
 
 ssize_t
 read(int fd, const void *buf, size_t len) {
@@ -102,6 +103,11 @@ waitpid(pid_t pid, int *wstatus, int options) {
 int
 set_fg_proc(pid_t pid) {
   return (pid_t)_do_syscall(SYS_SET_FG_PROC, pid, 0, 0, 0, 0, 0);
+}
+
+int
+sched_get_stats(struct sched_stats *stats) {
+  return (int)_do_syscall(SYS_SCHED_GET_STATS, (size_t)stats, 0, 0, 0, 0, 0);
 }
 
 /* stdio.h */

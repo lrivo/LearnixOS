@@ -68,8 +68,7 @@ sched_enqueue (struct process *p)
 {
   if (!p || p == sentinel) return;
 
-  // initialze the scheduling stats
-  memset((void*)&p->sched_stats, 0, sizeof(p->sched_stats));
+  // initialze the quantum slice
   p->ticks_left = RR_QUANTUM;
   
   // insert in the runqueue

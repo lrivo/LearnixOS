@@ -27,6 +27,7 @@ iso_deps = [
   echo_elf,
   test_elf,
   brainfuck_elf,
+  bench_elf,
 ]
 
 iso_target = custom_target(
