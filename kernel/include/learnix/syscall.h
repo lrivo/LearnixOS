@@ -8,6 +8,8 @@
 #define EEXIST 17   // already exist
 #define EINVAL 22
 #define EPIPE 32    // broken pipe
+#define EPERM 1     // operation not permitted
+#define ENOTSUP 95  // operation not supported
 
 /* Maximum path length accepted by path-taking syscalls (open, execve) */
 #define PATH_MAX 128
@@ -32,6 +34,7 @@
 #define SYS_WAIT 61
 #define SYS_SET_FG_PROC 62
 #define SYS_SCHED_GET_STATS 63
+#define SYS_SCHED_SET_PRIO 64
 
 /* This C function gets called by the syscall_entry assembly
  * routine for each HW architecture. */
@@ -71,3 +74,4 @@ void sys_wait (struct intr_trap_frame *tf);
 /* Custom syscalls */
 void sys_set_fg_proc (struct intr_trap_frame *tf);
 void sys_sched_get_stats(struct intr_trap_frame *tf);
+void sys_sched_set_prio(struct intr_trap_frame *tf);

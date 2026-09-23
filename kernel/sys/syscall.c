@@ -32,6 +32,7 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   /* --- non POSIX syscalls --- */
   [SYS_SET_FG_PROC] = sys_set_fg_proc,
   [SYS_SCHED_GET_STATS] = sys_sched_get_stats,
+  [SYS_SCHED_SET_PRIO] = sys_sched_set_prio,
 };
 
 void
@@ -109,7 +110,7 @@ sys_open(struct intr_trap_frame *tf) {
             RET(tf) = -2;
             return;
         }
-        
+
         extern struct file_ops inode_ramfs_ops;
         proc->fds[fd] = file_alloc(inode, &inode_ramfs_ops);
         if (!proc->fds[fd])
@@ -252,5 +253,19 @@ void
 sys_sched_get_stats(struct intr_trap_frame *tf) {
     struct process *p = arch_cpu_get()->proc;
     arch_copy_to_user((void*)ARG0(tf), &p->sched_stats, sizeof(p->sched_stats));
-    RET(tf) = 0;
+    RET(tf) = ticks;
+}
+
+void
+sys_sched_set_prio(struct intr_trap_frame *tf) {
+    pid_t pid = (pid_t)ARG0(tf);
+    uint64_t prio = (uint64_t)ARG1(tf);
+
+    struct process *p = proc_by_pid(pid);
+    if (p == NULL)
+        RET(tf) = -EINVAL;
+    else if (arch_cpu_get()->proc != p->parent)
+        RET(tf) = -EPERM;
+    else
+        RET(tf) = (size_t)sched_set_prio(p, prio);
 }

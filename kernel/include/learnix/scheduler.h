@@ -33,3 +33,8 @@ void sched_enqueue (struct process *p);
 /* Remove a process from this scheduler's runqueue */
 void sched_dequeue (struct process *p);
 
+/* Change the priority of a process, policy-dependent.
+ * Returns 0 on success, -ENOTSUP if the policy does not
+ * support priority changes, -EINVAL on invalid arguments. */
+int sched_set_prio (struct process *p, uint64_t prio);
+

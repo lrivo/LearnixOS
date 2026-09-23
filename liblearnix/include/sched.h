@@ -12,3 +12,4 @@ struct sched_stats {
 };
 
 int sched_get_stats(struct sched_stats *stats);
+int sched_set_prio(pid_t pid, unsigned int prio);

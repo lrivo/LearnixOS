@@ -4,6 +4,7 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
+#include <learnix/syscall.h>
 #define RR_QUANTUM 5
 
 static struct process *sentinel;
@@ -84,4 +85,12 @@ sched_dequeue (struct process *p)
   if (!p || p == sentinel) return;
   p->prev->next = p->next;
   p->next->prev = p->prev;
+}
+
+int
+sched_set_prio (struct process *p, uint64_t prio)
+{
+  (void)p;
+  (void)prio;
+  return -ENOTSUP;
 }

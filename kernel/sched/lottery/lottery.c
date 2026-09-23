@@ -3,8 +3,10 @@
 #include <learnix/lib/rand.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
+#include <learnix/syscall.h>
 
 #define INIT_TICKETS 100
+#define MAX_TICKETS 10000
 
 static size_t tot_tickets = 0;
 static struct process *runqueue;
@@ -80,6 +82,17 @@ sched_enqueue(struct process *p)
 
   p->priority = INIT_TICKETS;
   tot_tickets += INIT_TICKETS;
+}
+
+int
+sched_set_prio(struct process *p, uint64_t prio)
+{
+  if (!p || p->priority == 0 || prio == 0 || prio > MAX_TICKETS)
+    return -EINVAL;
+
+  tot_tickets += prio - p->priority;
+  p->priority = prio;
+  return 0;
 }
 
 void

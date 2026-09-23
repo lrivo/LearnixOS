@@ -110,6 +110,11 @@ sched_get_stats(struct sched_stats *stats) {
   return (int)_do_syscall(SYS_SCHED_GET_STATS, (size_t)stats, 0, 0, 0, 0, 0);
 }
 
+int
+sched_set_prio(pid_t pid, unsigned int prio) {
+  return (int)_do_syscall(SYS_SCHED_SET_PRIO, (size_t)pid, (size_t)prio, 0, 0, 0, 0);
+}
+
 /* stdio.h */
 void _putchar(char character) {
     // TODO: buffering

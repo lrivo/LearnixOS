@@ -18,15 +18,17 @@ burn_cpu(void) {
     sink += i * 17;
 }
 
-// TURNAROUND is not tracked yet, always 0 for now
 static void
-print_row(const struct sched_stats *s) {
+print_row(const struct sched_stats *s, unsigned long now_tick) {
+  unsigned long turnaround = now_tick > s->creation_tick
+                                 ? now_tick - s->creation_tick
+                                 : 0;
   unsigned long response =
       (s->first_sched_tick > s->creation_tick)
           ? s->first_sched_tick - s->creation_tick
           : 0;
 
-  printf(COL_FMT, getpid(), 0UL, response, s->ticks_running,
+  printf(COL_FMT, getpid(), turnaround, response, s->ticks_running,
          s->creation_tick, s->first_sched_tick, s->tot_rescheds,
          s->tot_wakeups);
 }
@@ -47,24 +49,29 @@ main(void) {
     if (pid == 0) {
       burn_cpu();
       struct sched_stats s;
-      if (sched_get_stats(&s) == 0) {
-        print_row(&s);
+      long now = sched_get_stats(&s);
+      if (now >= 0) {
+        print_row(&s, (unsigned long)now);
       } else
         printf("sched_get_stats failed\n");
       exit(0);
+    }
+
+    /* boost PID 5 so its larger CPU share is visible
+       (lottery scheduler only: RR returns -ENOTSUP) */
+    if (pid == 5) {
+      long r = sched_set_prio(pid, 500);
+      printf("sched_set_prio(5, 500) -> %ld\n", r);
+    }
+    if (pid == 10) {
+        long r = sched_set_prio(pid, 1);
+        printf("sched_set_prio(10, 1) -> %ld\n", r);
     }
   }
 
   for (int i = 0; i < N; i++) {
     wait(NULL);
   }
-
-  /*
-  struct sched_stats s;
-  if (sched_get_stats(&s) == 0) {
-    print_row(&s);
-  }
-  */
 
   return 0;
 }
