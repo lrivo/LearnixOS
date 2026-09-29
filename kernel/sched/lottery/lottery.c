@@ -4,12 +4,24 @@
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/syscall.h>
-
 #define INIT_TICKETS 100
 #define MAX_TICKETS 10000
 
 static size_t tot_tickets = 0;
+static uint64_t lottery_seed;
 static struct process *runqueue;
+
+/* Splitmax64 is a fast PRNG, which is good enough for our lottery selection.
+ * Taken from https://rosettacode.org/wiki/Pseudo-random_numbers/Splitmix64 */
+static uint64_t
+splitmix64(void)
+{
+  lottery_seed += 0x9E3779B97F4A7C15ULL;
+  uint64_t z = lottery_seed;
+  z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+  z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+  return z ^ (z >> 31);
+}
 
 /* Unlinke round robin, where the kernel idle is the sentinel node,
    we don't even need to include him in the runqueue here. */
@@ -19,6 +31,9 @@ sched_init()
   /* pretend the kernel idle was running */
   arch_cpu_get()->proc = proc_by_pid(0);
   arch_cpu_get()->proc_need_resched = true;
+
+  /* seed the lottery's PRNG from the kernel CSPRNG */
+  rand_bytes(&lottery_seed, sizeof(lottery_seed));
 
   kprintf("[INFO] lottery scheduler ready\n");
 }
@@ -45,20 +60,16 @@ sched_pick_next (struct process *curr)
 
   /* generate a random number between 0 and tot_tickets */
   size_t winner, cnt = 0;
-  rand_bytes(&winner, sizeof(winner));
-  winner = winner % tot_tickets;
+  winner = splitmix64() % tot_tickets;
 
   /* traverse the runqueue from the start. */
   struct process *current = runqueue;
-  while (current != NULL)
-  {
+  while (current) {
     cnt += current->priority;
     if (cnt > winner)
       break;  // current is the winner
     current = current->next;
   }
-
-  kprintfdbg("[lottery] drawn PID %d\n", current->pid);
 
   return current;
 }

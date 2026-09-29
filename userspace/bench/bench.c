@@ -48,6 +48,9 @@ main(void) {
     pid_t pid = fork();
     if (pid == 0) {
       burn_cpu();
+      burn_cpu();
+      burn_cpu();
+      burn_cpu();
       struct sched_stats s;
       long now = sched_get_stats(&s);
       if (now >= 0) {

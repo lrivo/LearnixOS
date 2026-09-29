@@ -5,7 +5,7 @@
 #include <learnix/mm/kmalloc.h>
 #include <learnix/scheduler.h>
 #include <learnix/syscall.h>
-#define RR_QUANTUM 5
+#define RR_QUANTUM 10
 
 static struct process *sentinel;
 
@@ -37,7 +37,7 @@ sched_pick_next (struct process *curr)
     if (p == curr)
       return sentinel;  // so we schedule the kernel idle
   }
-  
+
   return p->next;
 }
 
@@ -48,8 +48,8 @@ sched_tick (void)
   struct process *proc = arch_cpu_get()->proc;
   proc->sched_stats.ticks_running++;
   ticks++;
-  
-  kprintfdbg("[sched_tick] PID %d ticks %lu run_ticks: %lu left: %lu\n", 
+
+  kprintfdbg("[sched_tick] PID %d ticks %lu run_ticks: %lu left: %lu\n",
     (int)proc->pid, ticks, proc->sched_stats.ticks_running, proc->ticks_left);
 
   // with the idle process we can try to reschedule immediately
@@ -71,7 +71,7 @@ sched_enqueue (struct process *p)
 
   // initialze the quantum slice
   p->ticks_left = RR_QUANTUM;
-  
+
   // insert in the runqueue
   p->next = sentinel;
   p->prev = sentinel->prev;
