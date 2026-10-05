@@ -21,7 +21,7 @@ sched_init ()
   arch_cpu_get()->proc = sentinel;
   arch_cpu_get()->proc_need_resched = true;
 
-  kprintf("[INFO] sched_rr ready\n");
+  kprintf("[INFO] sched_rr ready (QUANTUM=%d)\n", RR_QUANTUM);
 }
 
 struct process *
@@ -49,9 +49,6 @@ sched_tick (void)
   proc->sched_stats.ticks_running++;
   ticks++;
 
-  kprintfdbg("[sched_tick] PID %d ticks %lu run_ticks: %lu left: %lu\n",
-    (int)proc->pid, ticks, proc->sched_stats.ticks_running, proc->ticks_left);
-
   // with the idle process we can try to reschedule immediately
   if (proc == sentinel) {
     arch_cpu_get()->proc_need_resched = true;
@@ -59,7 +56,6 @@ sched_tick (void)
     if (--proc->ticks_left == 0) {
       proc->ticks_left = RR_QUANTUM;
       arch_cpu_get()->proc_need_resched = true;
-      kprintfdbg("[sched_tick] PID %d exausted his quantum\n", (int)proc->pid);
     }
   }
 }

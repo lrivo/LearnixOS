@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sched.h>
+#include <pmm.h>
 
 ssize_t
 read(int fd, const void *buf, size_t len) {
@@ -113,6 +114,16 @@ sched_get_stats(struct sched_stats *stats) {
 int
 sched_set_prio(pid_t pid, unsigned int prio) {
   return (int)_do_syscall(SYS_SCHED_SET_PRIO, (size_t)pid, (size_t)prio, 0, 0, 0, 0);
+}
+
+int
+pmm_stats_start(void) {
+  return (int)_do_syscall(SYS_PMM_STATS_START, 0, 0, 0, 0, 0, 0);
+}
+
+int
+pmm_stats_get(struct pmm_stats *stats) {
+  return (int)_do_syscall(SYS_PMM_STATS_GET, (size_t)stats, 0, 0, 0, 0, 0);
 }
 
 /* stdio.h */

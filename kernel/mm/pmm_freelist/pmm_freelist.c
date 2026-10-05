@@ -4,6 +4,7 @@
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/string.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/mm/pmm_stats.h>
 #include <learnix/types.h>
 #include <limine.h>
 
@@ -145,6 +146,18 @@ pmm_test()
   {
     kpanic("pmm_test #3: contiguous region not freed correctly");
   }
+
+  // #4: stress test, fill up ~95% of physical memory and LEAVE it allocated,
+  // so the benchmark runs at a high fill level. On failure PMM returns
+  // PMM_ALLOC_FAIL, not NULL.
+  size_t target = tot_phys_pgs * 19 / 20;
+  for (size_t i = 0; i < target; i++)
+  {
+    if (pmm_alloc(PMM_NONE) == PMM_ALLOC_FAIL)
+      kpanic("pmm_test #4: ran out of pages below 95%% fill");
+  }
+
+  kprintf("[INFO] pmm_test #4: filled %lu/%lu frames\n", target, tot_phys_pgs);
 }
 
 void
@@ -187,7 +200,7 @@ pmm_init(struct limine_memmap_response *mmap)
    * the frames occupied by the pages[] array itself. */
   size_t arr_start = pa_to_idx(PGROUNDDOWN(V2P(pages)));
   size_t arr_end = pa_to_idx(PGROUNDUP(V2P(pages_end)));
-  for (size_t i = 0; i < mmap->entry_count; i++)
+  for (size_t i = mmap->entry_count; i-- > 0;)
   {
     struct limine_memmap_entry *entry = mmap->entries[i];
     if (entry->type == LIMINE_MEMMAP_USABLE
@@ -195,7 +208,7 @@ pmm_init(struct limine_memmap_response *mmap)
     {
       size_t start = pa_to_idx(PGROUNDDOWN(entry->base));
       size_t end = pa_to_idx(PGROUNDUP(entry->base + entry->length));
-      for (size_t idx = start; idx < end; idx++)
+      for (size_t idx = end; idx-- > start;)
       {
         /* Avoid clearing PG_ALLOC and PG_PINNED on the pages array.
          * No need to check for kernel code/data, as Limine already marks them
@@ -210,7 +223,7 @@ pmm_init(struct limine_memmap_response *mmap)
     }
   }
 
-  pmm_test();
+ pmm_test();
 
   kprintf("[INFO] pmm_freelist initialized\n");
 }
@@ -218,10 +231,14 @@ pmm_init(struct limine_memmap_response *mmap)
 paddr_t
 pmm_alloc(size_t flags)
 {
+  uint64_t tsc_start = pmm_stats_begin ();
+
   // pop the freelist, if NULL we are out of memory
   struct page *pg = page_pop();
   if (!pg)
+  {
     return PMM_ALLOC_FAIL;
+  }
 
   // mark it as allocated and initialize his refcount to 1
   pg->flags |= PG_ALLOC;
@@ -234,6 +251,7 @@ pmm_alloc(size_t flags)
   if (flags & PMM_ZERO)
     memset((void *)P2V(pa), 0, PGSIZE);
 
+  pmm_stats_end_alloc (tsc_start);
   return pa;
 }
 
@@ -289,6 +307,8 @@ pmm_ref_pg(paddr_t pa)
 void
 pmm_unref_pg(paddr_t pa)
 {
+  uint64_t tsc_start = pmm_stats_begin ();
+
   assert_valid_pa(pa);
   size_t idx = pa_to_idx(pa);
 
@@ -302,4 +322,6 @@ pmm_unref_pg(paddr_t pa)
     pages[idx].flags &= ~PG_ALLOC;  // clear PG_ALLOC
     page_push(&pages[idx]);        // freelist head push
   }
+
+  pmm_stats_end_unref (tsc_start);
 }

@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <sys/wait.h>
+#include <pmm.h>
 #define N 20
 
 #define COL_FMT "%-6d%-11lu%-10lu%-14lu%-14lu%-18lu%-14lu%-12lu\n"
@@ -44,6 +45,8 @@ main(void) {
   printf("=== Scheduler Benchmark: forking %d children ===\n", N);
   print_header();
 
+  pmm_stats_start();
+
   for (int i = 0; i < N; i++) {
     pid_t pid = fork();
     if (pid == 0) {
@@ -74,6 +77,17 @@ main(void) {
 
   for (int i = 0; i < N; i++) {
     wait(NULL);
+  }
+
+  struct pmm_stats st;
+  if (pmm_stats_get(&st) == 0) {
+    printf("\n%-8s%-10s%-10s%-10s%-10s%-10s\n", "OP", "COUNT", "MIN", "MEAN", "MEDIAN", "MAX");
+    printf("%-8s%-10lu%-10lu%-10lu%-10lu%-10lu\n", "alloc", st.alloc.count,
+           st.alloc.min, st.alloc.mean, st.alloc.median, st.alloc.max);
+    printf("%-8s%-10lu%-10lu%-10lu%-10lu%-10lu\n", "unref", st.unref.count,
+           st.unref.min, st.unref.mean, st.unref.median, st.unref.max);
+  } else {
+    printf("pmm_stats_get failed\n");
   }
 
   return 0;

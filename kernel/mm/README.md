@@ -16,6 +16,13 @@ Two interchangeable backends implement this interface (pick with `-Dpmm=`), each
 - **bitmap** ([`pmm_bitmap/`](pmm_bitmap/)): one bit per frame, first-fit scan at allocation time.
 - **freelist** ([`pmm_freelist/`](pmm_freelist/)): a per-frame `struct page { flags, refcount, next, prev }` array and an **unsorted (LIFO) doubly linked list** of free frames. Single-frame allocation *and* freeing are both O(1) (pop/push at the head); contiguous allocation is the trade-off: it must scan the whole list and unlink nodes one by one.
 
+### Allocation statistics
+Both backends feed the same, backend-independent statistics module ([`pmm_stats.c`](pmm_stats.c)). Two non-POSIX syscalls expose it to userspace:
+- `SYS_PMM_STATS_START` opens a measurement window and resets the counters.
+- `SYS_PMM_STATS_GET` closes it and copies a `struct pmm_stats` with `{count, min, mean, median, max}` cycles for `pmm_alloc()` and `pmm_unref_pg()` separately.
+
+The TSC is read only while a window is open, so the allocator pays nothing when no measurement is running. This is how the bitmap/freelist A/B is measured (`userspace/bench`).
+
 ## VMM: Virtual Memory Manager
 This component manages **page table**, the most important memory abstraction of modern OSes.
 

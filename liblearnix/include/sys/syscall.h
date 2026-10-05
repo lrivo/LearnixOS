@@ -21,6 +21,8 @@
 #define SYS_SET_FG_PROC 62
 #define SYS_SCHED_GET_STATS 63
 #define SYS_SCHED_SET_PRIO 64
+#define SYS_PMM_STATS_START 65
+#define SYS_PMM_STATS_GET 66
 
 int set_fg_proc(pid_t pid);
 
