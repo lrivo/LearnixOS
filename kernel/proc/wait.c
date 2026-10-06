@@ -1,3 +1,4 @@
+#include "learnix/lib/kprintf.h"
 #include <learnix/syscall.h>
 #include <learnix/cpu.h>
 #include <learnix/process.h>
@@ -10,6 +11,7 @@ sys_wait (struct intr_trap_frame *tf)
   int target_pid = (int)ARG0(tf);
 
   struct process *parent = arch_cpu_get()->proc, *child;
+  kprintfdbg("[sys_wait] PID %d\n", parent->pid);
   while (1)
   {
     // search a ZOMBIE child of "parent" across all processes
@@ -25,11 +27,14 @@ sys_wait (struct intr_trap_frame *tf)
       if (target_pid != -1 && child->pid != (pid_t)target_pid)
           continue;
 
+      kprintfdbg("[sys_wait] parent %d waken up on %d\n",
+        (int)parent->pid, (int)child->pid);
+
       /* NOTE: I guess it's more correct that exit() does
         this call since it will always run before this.
         It became a bug while writing the lottery scheduler with
         the assumption that runqueue only has running processes that
-        previously rr didn't have. */
+        previously rr didn't have (but now has). */
       sched_dequeue(child);
 
       // we've found a ZOMBIE child we can free
@@ -42,6 +47,7 @@ sys_wait (struct intr_trap_frame *tf)
 
     // BUG: if parent has no child this sleeps forever
     // no ZOMBIE child found, sleep untill one exits
+    // FIX: should pass to a linked list of child processes
     sleep_on(&parent->child_wq);
   }
 }

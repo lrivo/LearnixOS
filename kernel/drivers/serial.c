@@ -48,3 +48,10 @@ serial_putchar(const char c)
   // write c to COM1's port
   pio_write8(COM1, (uint8_t)c);
 }
+
+void serial_puts(const char *s) {
+  while (*s) {
+    serial_putchar(*s);
+    s++;
+  }
+}

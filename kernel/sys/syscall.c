@@ -3,6 +3,7 @@
 #include "learnix/process.h"
 #include <learnix/cpu.h>
 #include <learnix/mm/kmalloc.h>
+#include <learnix/mm/pmm_stats.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
 #include <learnix/scheduler.h>
@@ -30,7 +31,11 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_EXIT] = sys_exit,
   [SYS_WAIT] = sys_wait,
   /* --- non POSIX syscalls --- */
-  [SYS_SET_FG_PROC] = sys_set_fg_proc
+  [SYS_SET_FG_PROC] = sys_set_fg_proc,
+  [SYS_SCHED_GET_STATS] = sys_sched_get_stats,
+  [SYS_SCHED_SET_PRIO] = sys_sched_set_prio,
+  [SYS_PMM_STATS_START] = sys_pmm_stats_start,
+  [SYS_PMM_STATS_GET] = sys_pmm_stats_get,
 };
 
 void
@@ -108,7 +113,7 @@ sys_open(struct intr_trap_frame *tf) {
             RET(tf) = -2;
             return;
         }
-        
+
         extern struct file_ops inode_ramfs_ops;
         proc->fds[fd] = file_alloc(inode, &inode_ramfs_ops);
         if (!proc->fds[fd])
@@ -245,4 +250,42 @@ sys_set_fg_proc (struct intr_trap_frame *tf)
     tty0.foreground = new_fg;
     RET(tf) = new_fg->pid;
   }
+}
+
+void
+sys_sched_get_stats(struct intr_trap_frame *tf) {
+    struct process *p = arch_cpu_get()->proc;
+    arch_copy_to_user((void*)ARG0(tf), &p->sched_stats, sizeof(p->sched_stats));
+    RET(tf) = ticks;
+}
+
+void
+sys_sched_set_prio(struct intr_trap_frame *tf) {
+    pid_t pid = (pid_t)ARG0(tf);
+    uint64_t prio = (uint64_t)ARG1(tf);
+
+    struct process *p = proc_by_pid(pid);
+    if (p == NULL)
+        RET(tf) = -EINVAL;
+    else if (arch_cpu_get()->proc != p->parent)
+        RET(tf) = -EPERM;
+    else
+        RET(tf) = (size_t)sched_set_prio(p, prio);
+}
+
+void
+sys_pmm_stats_start(struct intr_trap_frame *tf) {
+    pmm_stats_start();
+    RET(tf) = 0;
+}
+
+void
+sys_pmm_stats_get(struct intr_trap_frame *tf) {
+    struct pmm_stats st;
+    pmm_stats_stop(&st);
+
+    if (arch_copy_to_user((void*)ARG0(tf), &st, sizeof(st)) < 0)
+        RET(tf) = -EFAULT;
+    else
+        RET(tf) = 0;
 }

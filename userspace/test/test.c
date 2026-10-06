@@ -53,6 +53,27 @@ int test_vma_mmap() {
     printf("%d\n", p[22]);
 }
 
+int test_rr_batch() {
+    // spawn 10 processes that do batching work
+    pid_t parent = getpid();
+    for (int i = 0; i < 10; i++) {
+        int pid = fork();
+        switch (pid) {
+            case -1: return 1;
+            case 0: {
+                // child spin-waits
+                for (int j = 0; j < 9999999; j++) ;
+                printf("[DONE] PID %d\n", getpid());
+                return 0;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
 int main(void) {
-    return test_vma_mmap();
+    return test_rr_batch();
 }

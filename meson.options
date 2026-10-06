@@ -5,7 +5,7 @@ option('sched', type: 'combo',
   description: 'Scheduler policy')
 
 option('pmm', type: 'combo',
-  choices: ['bitmap', 'linked_list'],
+  choices: ['bitmap', 'freelist'],
   value: 'bitmap',
   description: 'Physical memory manager')
 

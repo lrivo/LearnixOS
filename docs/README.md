@@ -18,7 +18,7 @@ headers - is described under [arch/](../kernel/arch/README.md).
 
 Learnix is designed to swap and test different components at compile time; for
 now the swappable set is:
-- the physical memory manager (`-Dpmm=bitmap|list`)
+- the physical memory manager (`-Dpmm=bitmap|freelist`)
 - the kernel heap (`-Dkmalloc=freelist|watermark`)
 - the scheduler (`-Dsched=rr|mlfq|lottery`)
 

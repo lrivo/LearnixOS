@@ -17,3 +17,5 @@ int serial_init();
 
 /* Writes a byte on the serial console. Called by kprintf(). */
 void serial_putchar(const char c);
+
+void serial_puts(const char *s);

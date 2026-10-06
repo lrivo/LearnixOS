@@ -1,11 +1,9 @@
 #pragma once
+#include <learnix/sched_types.h>
 #include <learnix/process.h>
 
-struct wait_queue
-{
-  struct process *proc;
-  struct wait_queue *next;
-};
+// global ticks counter (defined in sched.c)
+extern volatile uint64_t ticks;
 
 /* Scheduling entrypoint, called before returning from an interrupt
  * if needed. */
@@ -34,4 +32,9 @@ void sched_enqueue (struct process *p);
 
 /* Remove a process from this scheduler's runqueue */
 void sched_dequeue (struct process *p);
+
+/* Change the priority of a process, policy-dependent.
+ * Returns 0 on success, -ENOTSUP if the policy does not
+ * support priority changes, -EINVAL on invalid arguments. */
+int sched_set_prio (struct process *p, uint64_t prio);
 

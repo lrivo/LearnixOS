@@ -3,6 +3,7 @@
 #include <learnix/lib/kpanic.h>
 #include <learnix/lib/string.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/mm/pmm_stats.h>
 #include <learnix/types.h>
 #include <limine.h>
 
@@ -109,6 +110,21 @@ pmm_test ()
   {
     kpanic ("pmm_test #2: page not freeed correctly");
   }
+
+  // #4: stress test, fill up ~95% of physical memory and LEAVE it allocated,
+  // so the benchmark runs at a high fill level (same as the freelist backend,
+  // for a fair A/B). On failure PMM returns PMM_ALLOC_FAIL, not NULL.
+  size_t target = tot_phys_pgs * 19 / 20;
+  for (size_t i = 0; i < target; i++)
+  {
+    break;
+    if (pmm_alloc (PMM_NONE) == PMM_ALLOC_FAIL)
+    {
+      kpanic ("pmm_test #4: ran out of pages below 95%% fill");
+    }
+  }
+
+  kprintf ("[INFO] pmm_test #4: filled %lu/%lu frames\n", target, tot_phys_pgs);
 }
 
 void
@@ -158,7 +174,6 @@ pmm_init (struct limine_memmap_response *mmap)
     if (entry->type == LIMINE_MEMMAP_USABLE
         || entry->type == LIMINE_MEMMAP_BOOTLOADER_RECLAIMABLE)
     {
-      // OPTIMIZE: could memset in 64 bit blocks
       uint64_t start = pa_to_idx (PGROUNDDOWN (entry->base));
       uint64_t end = pa_to_idx (PGROUNDUP (entry->base + entry->length));
       bitmap_assign_range (start, end, 0);
@@ -178,6 +193,7 @@ pmm_init (struct limine_memmap_response *mmap)
 paddr_t
 pmm_alloc (size_t flags)
 {
+  uint64_t tsc_start = pmm_stats_begin ();
   uint64_t *b = (uint64_t *)bitmap;
   size_t idx = 0;
 
@@ -218,6 +234,7 @@ pmm_alloc (size_t flags)
         memset ((void *)P2V (pa), 0, PGSIZE);
       }
 
+      pmm_stats_end_alloc (tsc_start);
       return pa;
     }
   }
@@ -238,6 +255,8 @@ pmm_ref_pg (paddr_t pa)
 void
 pmm_unref_pg (paddr_t pa)
 {
+  uint64_t tsc_start = pmm_stats_begin ();
+
   assert_valid_pa (pa);
 
   size_t idx = pa_to_idx (pa);
@@ -253,4 +272,6 @@ pmm_unref_pg (paddr_t pa)
   {
     bitmap_clear_bit (idx);
   }
+
+  pmm_stats_end_unref (tsc_start);
 }

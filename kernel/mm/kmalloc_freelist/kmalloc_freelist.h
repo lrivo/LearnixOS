@@ -1,9 +1,5 @@
 #include <learnix/types.h>
 
-/* a chunk must have at least a pointer-width of data
- * space for storing the *next field. */
-#define ALLOC_MIN sizeof(uintptr_t)
-
 /* structures definitions */
 struct chunk
 {
@@ -22,7 +18,9 @@ struct heap
   uint32_t nalloc;
 };
 
-/* macros */
+/* a chunk must have at least a pointer-width of data
+ * space for storing the *next field. */
+#define ALLOC_MIN sizeof(uintptr_t)
 #define IS_CNK_ALLOC(c) (((struct chunk*)(c))->flags & CNK_ALLOC)
 #define CNK_NXT(c) ((struct chunk*)((char*)(c) + 8 + (c)->size))
 #define CNK_HDR(c) ((struct chunk*)((char*)(c) - 8))

@@ -18,14 +18,14 @@ extern syscall_dispatcher
 ; arch_stage_2() puts his address in the LSTAR MSR.
 global syscall_entry
 syscall_entry:
-  swapgs              ; load kernel GS 
-  mov [gs:24], rsp    ; save userspace rsp 
-  mov rsp, [gs:16]    ; rsp = cpu->proc 
+  swapgs              ; load kernel GS
+  mov [gs:24], rsp    ; save userspace rsp
+  mov rsp, [gs:16]    ; rsp = cpu->proc
   mov rsp, [rsp+8]    ; rsp = cpu->proc->kstack
   add rsp, 4096       ; rsp += KSTACK_SIZE
-  
+
   ; construct the x86_64 struct intr_trap_frame
-  push qword 0x1B     ; GDT_UDATA | 3 
+  push qword 0x1B     ; GDT_UDATA | 3
   push qword [gs:24]  ; userspace RSP
   push r11            ; rflags
   push qword 0x23     ; GDT_UCODE | 3
@@ -51,9 +51,9 @@ syscall_entry:
   push r13
   push r14
   push r15
-  
+
   mov rdi, rsp
   call syscall_dispatcher
-  
+
   ; go through the common kernel_exit
   jmp kernel_exit

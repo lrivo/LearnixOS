@@ -93,7 +93,10 @@ The details live in [`fs/`](../fs/README.md).
 ## Non-POSIX extras
 Beyond the classic UNIX syscalls, Learnix adds a few of its own (tagged
 `/* --- non POSIX syscalls --- */`), such as `SYS_SET_FG_PROC` to switch the
-foreground process of the console.
+foreground process of the console, the scheduler stats pair
+(`SYS_SCHED_GET_STATS` / `SYS_SCHED_SET_PRIO`), and the PMM stats pair
+(`SYS_PMM_STATS_START` / `SYS_PMM_STATS_GET`) used to benchmark the physical
+allocator from userspace.
 
 Subsystem links: [fs/](../fs/README.md) · [proc/](../proc/README.md) ·
 [mm/](../mm/README.md) · [arch/](../arch/README.md) for the trap-frame

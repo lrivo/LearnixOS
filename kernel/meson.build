@@ -52,6 +52,7 @@ kernel_src = files(
   'lib/kprintf.c',
   'lib/limine_module.c',
   'mm/uvm.c',
+  'mm/pmm_stats.c',
   'mm/vmm.c',
   'mm/vma.c',
   'mm/page_fault.c',
@@ -86,13 +87,15 @@ elif sched == 'lottery'
 endif
 
 if pmm == 'bitmap'
-  kernel_src += 'mm/pmm_bitmap.c'
+  kernel_src += 'mm/pmm_bitmap/pmm_bitmap.c'
+elif pmm == 'freelist'
+  kernel_src += 'mm/pmm_freelist/pmm_freelist.c'
 endif
 
 if kmalloc == 'watermark'
-  kernel_src += 'mm/kmalloc_watermark.c'
-elif kmalloc == 'free_list' 
-  kernel_src += 'mm/kmalloc_freelist.c'
+  kernel_src += 'mm/kmalloc_watermark/kmalloc_watermark.c'
+elif kmalloc == 'free_list'
+  kernel_src += 'mm/kmalloc_freelist/kmalloc_freelist.c'
 endif
 
 if rand == 'chacha20'

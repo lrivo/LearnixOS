@@ -1,3 +1,4 @@
+#include "learnix/lib/kprintf.h"
 #include <learnix/cpu.h>
 #include <learnix/fs.h>
 #include <learnix/syscall.h>

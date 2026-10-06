@@ -27,6 +27,7 @@ iso_deps = [
   echo_elf,
   test_elf,
   brainfuck_elf,
+  bench_elf,
 ]
 
 iso_target = custom_target(
@@ -57,12 +58,13 @@ run_target('run',
     '-drive', 'if=pflash,unit=0,format=raw,file=' + meson.project_source_root() / 'deps/edk2-ovmf/ovmf-code-x86_64.fd,readonly=on',
     '-cdrom', iso_target,
     '-boot', 'd',
-    '-no-reboot', 
+    '-no-reboot',
     '-no-shutdown',
     '-m', '2G',
     '-d', 'cpu_reset',
     '-enable-kvm',
     '-cpu', 'host',
+    '-serial', 'file:serial.log',
   ],
   depends: iso_target
 )
@@ -75,7 +77,7 @@ run_target('gdb',
     '-drive', 'if=pflash,unit=0,format=raw,file=' + meson.project_source_root() / 'deps/edk2-ovmf/ovmf-code-x86_64.fd,readonly=on',
     '-cdrom', iso_target,
     '-boot', 'd',
-    '-no-reboot', 
+    '-no-reboot',
     '-no-shutdown',
     '-m', '2G',
     '-d', 'cpu_reset',

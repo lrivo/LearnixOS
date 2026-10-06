@@ -31,6 +31,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <learnix/drivers/serial.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/types.h>
 
@@ -154,6 +155,19 @@ _out_char (char character, void *buffer, size_t idx, size_t maxlen)
   if (character)
   {
     _putchar (character);
+  }
+}
+
+// internal serial-only output (used by kprintfdbg)
+static inline void
+_out_serial (char character, void *buffer, size_t idx, size_t maxlen)
+{
+  (void)buffer;
+  (void)idx;
+  (void)maxlen;
+  if (character)
+  {
+    serial_putchar (character);
   }
 }
 
@@ -1109,6 +1123,16 @@ vprintf_ (const char *format, va_list va)
 {
   char buffer[1];
   return _vsnprintf (_out_char, buffer, (size_t)-1, format, va);
+}
+
+void
+kprintfdbg (const char *format, ...)
+{
+  va_list va;
+  va_start (va, format);
+  char buffer[1];
+  _vsnprintf (_out_serial, buffer, (size_t)-1, format, va);
+  va_end (va);
 }
 
 int

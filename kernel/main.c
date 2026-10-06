@@ -77,7 +77,6 @@ paddr_t kernel_phys_base;
 void
 _putchar (char c)
 {
-  serial_putchar (c);
   console_putchar (c);
 }
 
@@ -87,17 +86,6 @@ kidle(void) {
     arch_interrupts_enable();
     arch_cpu_hcf();
 }
-
-  static inline void vma_print(struct vm_area *curr) {   
-    while (curr) {
-        kprintf("0x%p 0x%p - ", curr->start, curr->end);  
-        if (curr->flags & VMA_READ) kprintf("R "); 
-        if (curr->flags & VMA_WRITE) kprintf("W "); 
-        if (curr->flags & VMA_EXEC) kprintf("X "); 
-        kprintf("\n");
-        curr = curr->next;
-    }
-  }
 
 /* Kernel's entrypoint function as defined by the linker script.
  * Has the job to initialize all subsystems as then hand the CPU
@@ -178,18 +166,6 @@ kmain (void)
   elf_load(elf, init->pgtable);
   arch_proc_init(init, elf->e_entry, USR_STACK + PGSIZE);
   sched_enqueue(init);
-
-  // TEST vma
-  struct vm_area *head = vma_alloc(0x400000, 0x400000 + 2 * PGSIZE, VMA_READ | VMA_EXEC);
-  vma_insert(&head, vma_alloc(0x7ffffffdd000UL, 0x7ffffffdd000UL + PGSIZE, VMA_READ | VMA_WRITE));
-  vma_print(head);
-
-  kprintf("%p\n", vma_search(head, 0x400000));
-  kprintf("%p\n", vma_search(head, 0x400010));
-  kprintf("%p\n", vma_search(head, 0x500000));
-    
-  vma_remove(&head, vma_search(head, 0x400000));
-  vma_print(head);
 
   // Done, the kernel idle process will spin here forever
   // with interrupts on so that the timer can fire
