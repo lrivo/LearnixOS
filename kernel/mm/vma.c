@@ -27,7 +27,7 @@ vma_insert(struct vm_area **head, struct vm_area *vma) {
     if (!head || !vma)
         return 0;
 
-    while (*head && vma->start > (*head)->end) {
+    while (*head && vma->start >= (*head)->end) {
         head = &((*head)->next);
     }
     vma->next = *head;

@@ -11,6 +11,7 @@
 #define VMA_WRITE      (1UL << 1)
 #define VMA_EXEC       (1UL << 2)
 #define VMA_FILEBACKED (1UL << 3)
+#define VMA_STACK      (1UL << 4)
 
 /* This struct represents a virtual memory area. */
 struct vm_area {

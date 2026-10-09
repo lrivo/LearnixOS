@@ -1,5 +1,7 @@
 #include "learnix/arch/types.h"
+#include <learnix/mm/mm.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/mm/vma.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/lib/elf.h>
 #include <learnix/lib/string.h>
@@ -8,7 +10,7 @@
 
 /* Tries to map a PT_LOAD segment */
 static int
-elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
+elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *mm)
 {
   size_t npages, i, n;
   paddr_t pa;
@@ -44,8 +46,39 @@ elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
       memcpy((void*)P2V(pa), (void*)hdr + phent->p_offset + (i * PGSIZE), n);
 
       // insert the mapping
-      if (vmm_map(pgdir, (vaddr_t)phent->p_vaddr + (i * PGSIZE), pa, flags) < 0)
+      if (vmm_map(mm->pgtable, (vaddr_t)phent->p_vaddr + (i * PGSIZE), pa, flags) < 0)
         return -1;  // TODO goto cleanup
+  }
+
+  /* the segment comes from the ELF file: describe it with a
+     file-backed VMA (the flag is metadata for now, nothing
+     enforces it yet) */
+  uint64_t vma_flags = VMA_FILEBACKED;
+  if (phent->p_flags & PF_R)
+    vma_flags |= VMA_READ;
+  if (phent->p_flags & PF_W)
+    vma_flags |= VMA_WRITE;
+  if (phent->p_flags & PF_X)
+    vma_flags |= VMA_EXEC;
+
+  struct vm_area *vma = vma_alloc((vaddr_t)phent->p_vaddr,
+                                  (vaddr_t)phent->p_vaddr + phent->p_memsz,
+                                  vma_flags);
+  if (!vma || !vma_insert(&mm->vma_head, vma))
+    return -1;
+
+  /* record the image layout in the memory descriptor */
+  if (phent->p_flags & PF_X)
+  {
+    mm->text_start = (vaddr_t)phent->p_vaddr;
+    mm->text_end = (vaddr_t)phent->p_vaddr + phent->p_memsz;
+  }
+  else if (phent->p_flags & PF_W)
+  {
+    mm->data_start = (vaddr_t)phent->p_vaddr;
+    mm->data_end = (vaddr_t)phent->p_vaddr + phent->p_filesz;
+    mm->bss_start = mm->data_end;
+    mm->bss_end = (vaddr_t)phent->p_vaddr + phent->p_memsz;
   }
 
   return 0;
@@ -53,12 +86,23 @@ elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
 
 /* Load the userspace stack into pgdir at a fixed address. */
 static int
-elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
+elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *mm)
 {
   paddr_t pg = pmm_alloc(PMM_ZERO);
 
-  return vmm_map(pgdir, (vaddr_t)USR_STACK, pg,
+  int ret = vmm_map(mm->pgtable, (vaddr_t)USR_STACK, pg,
            VMM_FLAG_WRITE | VMM_FLAG_USER);
+  if (ret < 0)
+    return ret;
+
+  /* the stack is not backed by any file: plain anonymous VMA */
+  struct vm_area *vma = vma_alloc((vaddr_t)USR_STACK,
+                                  (vaddr_t)USR_STACK + PGSIZE,
+                                  VMA_READ | VMA_WRITE | VMA_STACK);
+  if (!vma || !vma_insert(&mm->vma_head, vma))
+    return -1;
+
+  return 0;
 }
 
 int
@@ -84,7 +128,7 @@ elf_validate(struct elf64_hdr *hdr)
 }
 
 int
-elf_load(struct elf64_hdr *hdr, vaddr_t pgdir)
+elf_load(struct elf64_hdr *hdr, struct mm_desc *mm)
 {
   int ret = 0;
   // find the Program Header Table
@@ -96,10 +140,10 @@ elf_load(struct elf64_hdr *hdr, vaddr_t pgdir)
     switch (phent->p_type)
     {
       case PT_LOAD:
-        ret = elf_seg_loadable(hdr, phent, pgdir);
+        ret = elf_seg_loadable(hdr, phent, mm);
         break;
       case PT_STACK:
-        ret = elf_seg_stack(hdr, phent, pgdir);
+        ret = elf_seg_stack(hdr, phent, mm);
         break;
       default:
         continue;

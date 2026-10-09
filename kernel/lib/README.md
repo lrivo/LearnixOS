@@ -12,14 +12,14 @@ folder).
 - **`debug.c`** - assertion and crash debugging helpers.
 - **`rand.h`** - the thin interface over the CSPRNG implemented in
   `security/chacha20.c`.
-- **`elf.c`** - loads a userspace ELF executable into a fresh page table.
+- **`elf.c`** - loads a userspace ELF executable into a memory descriptor.
 - **`limine_module.c`** - looks up a bootloader-provided module (a raw file)
   by path; this is the heart of the kernel's "ramfs".
 
 ## ELF loader (`elf.c`)
 
-`elf_load(hdr, pgdir)` turns a raw ELF image (from the Limine module list)
-into a runnable address space:
+`elf_load(hdr, mm)` turns a raw ELF image (from the Limine module list)
+into a runnable address space inside a [`struct mm_desc`](../include/learnix/mm/mm_types.h):
 
 1. **Validates** (`elf_validate`): checks the ELF magic, that it is an
    executable (`ET_EXEC`) for this machine (`EM_AMD64`), returning an errno
@@ -28,7 +28,13 @@ into a runnable address space:
    `PT_LOAD` section it maps the segment's virtual address onto freshly
    allocated physical pages, copying in the section bytes across page
    boundaries; for `PT_STACK` it maps a fixed `USR_STACK` region.
-3. Enforces a **W^X policy**: a section that would end up both writable and
+3. **Describes what it mapped with VMAs** ([`mm_types.h`](../include/learnix/mm/mm_types.h)):
+   every `PT_LOAD` segment becomes a **file-backed** VMA with the segment's
+   `PF_R/PF_W/PF_X` permissions (the flag is metadata for now, nothing
+   enforces file-backed semantics yet), and the stack gets a plain anonymous
+   VMA. It also records the image layout (`.text`/`.data`/`.bss` bounds) in
+   the descriptor.
+4. Enforces a **W^X policy**: a section that would end up both writable and
    executable is rejected up front.
 
 > 🐞 **Known issues (tracked in `todo.md`):** `elf_load` implicitly assumes

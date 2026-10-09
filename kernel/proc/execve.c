@@ -8,6 +8,33 @@
 #include <learnix/syscall.h>
 #include <learnix/lib/limine_module.h>
 
+/* Prints mm's VMA list like Linux's /proc/<pid>/maps.
+ * The offset/dev/inode columns are omitted until VMAs carry a file. */
+static void
+mm_print_maps (struct mm_desc *mm, const char *path)
+{
+  for (struct vm_area *v = mm->vma_head; v; v = v->next)
+    {
+      char perms[5] = "---p";
+      if (v->flags & VMA_READ)
+        perms[0] = 'r';
+      if (v->flags & VMA_WRITE)
+        perms[1] = 'w';
+      if (v->flags & VMA_EXEC)
+        perms[2] = 'x';
+
+      const char *backing = "[anon]";
+      if (v->flags & VMA_STACK)
+        backing = "[stack]";
+      else if (v->flags & VMA_FILEBACKED)
+        backing = path;
+
+      kprintfdbg ("%016lx-%016lx %s %s\n",
+                  (unsigned long)v->start, (unsigned long)v->end,
+                  perms, backing);
+    }
+}
+
 void
 sys_execve (struct intr_trap_frame *tf)
 {
@@ -39,7 +66,7 @@ sys_execve (struct intr_trap_frame *tf)
   mm = mm_alloc ();
 
   // try to load the ELF image into it
-  ret = elf_load(elf, mm->pgtable);
+  ret = elf_load(elf, mm);
   if (ret < 0)
     goto bad;
 
@@ -57,6 +84,7 @@ sys_execve (struct intr_trap_frame *tf)
 
   // unwind the syscall stack frame
   kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
+  mm_print_maps (curr->mm, path);
   return;
 
   /* if the requested ELF file was bad we destroy the
