@@ -10,12 +10,10 @@ sys_fork(struct intr_trap_frame *tf)
 {
   struct process *parent = arch_cpu_get()->proc;
   struct process *child = proc_create();
-
   child->parent = parent;
-  child->sched_stats.creation_tick = ticks;
 
   // copy parent's userspace mappings into the child
-  uvm_copy(child->pgtable, parent->pgtable);
+  uvm_copy(child->mm->pgtable, parent->mm->pgtable);
 
   /* initialize child->tf, the memcpy below will overwrite the
      trapframe this function sets up */
@@ -27,7 +25,6 @@ sys_fork(struct intr_trap_frame *tf)
   // copy parent's file descriptor table
   for (int i = 0; i < NFDS; i++) {
     if (!parent->fds[i]) continue;
-
     child->fds[i] = parent->fds[i];
     child->fds[i]->refcount++;
   }
@@ -35,7 +32,8 @@ sys_fork(struct intr_trap_frame *tf)
   // insert child in the runqueue
   sched_enqueue(child);
 
-  // set the return values
+  /* set the returns values: 0 for the child and child->pid
+   * for the parent. */
   RET(tf) = child->pid;
   RET(child->tf) = 0;
 

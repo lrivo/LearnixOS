@@ -52,6 +52,7 @@ kernel_src = files(
   'lib/kprintf.c',
   'lib/limine_module.c',
   'mm/uvm.c',
+  'mm/mm_desc.c',
   'mm/pmm_stats.c',
   'mm/vmm.c',
   'mm/vma.c',

@@ -163,7 +163,7 @@ kmain (void)
   init->fds[0] = file_alloc(&tty0, &tty_ops_r);  // stdin
   init->fds[1] = file_alloc(&tty0, &tty_ops_w);  // stdout
   struct elf64_hdr *elf = (struct elf64_hdr*)limine_module_get("/boot/init")->address;
-  elf_load(elf, init->pgtable);
+  elf_load(elf, init->mm->pgtable);
   arch_proc_init(init, elf->e_entry, USR_STACK + PGSIZE);
   sched_enqueue(init);
 

@@ -1,4 +1,4 @@
-#include "learnix/mm/vmm.h"
+#include <learnix/mm/mm.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
 #include <learnix/lib/elf.h>
@@ -12,7 +12,7 @@ void
 sys_execve (struct intr_trap_frame *tf)
 {
   ssize_t ret;                                      // return code
-  vaddr_t uvm = 0;                                  // new page table
+  struct mm_desc *mm = NULL;                        // new address space
   struct process *curr = arch_cpu_get()->proc;      // process that called execve()
   struct elf64_hdr *elf;                            // ELF header
   char path[PATH_MAX];                              // kernel copy of ARG0
@@ -35,19 +35,19 @@ sys_execve (struct intr_trap_frame *tf)
   if (ret < 0)
     goto bad;
 
-  // allocate a new page table with kernel mappings
-  uvm = uvm_alloc ();
+  // allocate a new address space (page table + empty VMA list)
+  mm = mm_alloc ();
 
-  // try to load the ELF image into uvm
-  ret = elf_load(elf, uvm);
+  // try to load the ELF image into it
+  ret = elf_load(elf, mm->pgtable);
   if (ret < 0)
     goto bad;
 
-  // destroy the old uvm (TODO: make this deferred when kernel_idle runs)
-  uvm_destroy(curr->pgtable);
+  // destroy the old address space (TODO: make this deferred when kernel_idle runs)
+  mm_free (curr->mm);
 
-  // swap curr's page table
-  curr->pgtable = uvm;
+  // swap curr's address space
+  curr->mm = mm;
 
   /* this function modifies curr->tf in place, when sys_dispatcher
    * returns and eventually calls kernel_exit it will land on this
@@ -60,9 +60,9 @@ sys_execve (struct intr_trap_frame *tf)
   return;
 
   /* if the requested ELF file was bad we destroy the
-   * new page table and return an error to the caller. */
+   * new address space and return an error to the caller. */
 bad:
-  if (uvm)
-    uvm_destroy(uvm);
+  if (mm)
+    mm_free (mm);
   RET (tf) = ret;
 }

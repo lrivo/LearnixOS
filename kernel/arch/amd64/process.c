@@ -99,7 +99,7 @@ arch_proc_exec(struct process *p, vaddr_t user_ip, vaddr_t user_sp)
   // TODO: this could also go in kernel_exit after call schedule
   // but for now I'll put it here
   tss_set_rsp0(p->kstack + KSTACK_SIZE);
-  asm volatile ("mov %0,%%cr3" ::"r"(V2P(p->pgtable)));
+  asm volatile ("mov %0,%%cr3" ::"r"(V2P(p->mm->pgtable)));
 }
 
 void
@@ -110,7 +110,7 @@ arch_context_switch (struct process *prev, struct process *next)
 
   /* change address space at the last possible moment
      before context switching as this flushes the TLB. */
-  asm volatile ("mov %0,%%cr3" ::"r"(V2P (next->pgtable)));
+  asm volatile ("mov %0,%%cr3" ::"r"(V2P (next->mm->pgtable)));
 
   // assembly stub that does the actual switch
   _switch_to (&prev->ctx, &next->ctx);

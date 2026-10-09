@@ -32,7 +32,7 @@ sys_mmap(struct intr_trap_frame *tf) {
         }
 
         // must not be already mapped in a VMA
-        if (vma_search(curr->vma_head, addr)) {
+        if (vma_search(curr->mm->vma_head, addr)) {
             ret = -EEXIST; goto bad; 
         }
     } else {
@@ -51,13 +51,13 @@ sys_mmap(struct intr_trap_frame *tf) {
 
     // now we can insert the address
     struct vm_area *new = vma_alloc(addr, addr + 4096, vma_flags);
-    if (vma_insert(&curr->vma_head, new)) {
+    if (vma_insert(&curr->mm->vma_head, new)) {
         RET(tf) = (size_t)addr;
     } else {
         RET(tf) = -EEXIST; goto bad;
     }
 
-    vma_print(curr->vma_head);
+    vma_print(curr->mm->vma_head);
     return;
 
 bad:

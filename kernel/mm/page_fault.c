@@ -56,7 +56,7 @@ mm_page_fault(vaddr_t fault, uint64_t flags) {
     // usermode caused the fault
     if (flags & PF_USER) {
         // does a vma with this address exists?
-        struct vm_area *v = vma_search(proc->vma_head, fault);
+        struct vm_area *v = vma_search(proc->mm->vma_head, fault);
         if (!v)
             goto sigsegv;
         
@@ -75,7 +75,7 @@ mm_page_fault(vaddr_t fault, uint64_t flags) {
                     // FILE BACKED MAPPING TODO
                 } else {
                     // DEMAND PAGING (virtually allocate a zeroed page frame)
-                    vmm_map(proc->pgtable, fault, pmm_alloc(PMM_ZERO), vma_flags_to_vmm(v));
+                    vmm_map(proc->mm->pgtable, fault, pmm_alloc(PMM_ZERO), vma_flags_to_vmm(v));
                 }
             } else {
                 goto sigsegv;
