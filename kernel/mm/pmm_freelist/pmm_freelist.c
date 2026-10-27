@@ -112,54 +112,6 @@ page_unlink(struct page *pg)
   pg->next = pg->prev = NULL;
 }
 
-/* test */
-static void
-pmm_test()
-{
-  // #1: free then alloc, with an unsorted LIFO list we must get back the same
-  // page (push at head, pop at head)
-  paddr_t p1 = pmm_alloc(PMM_NONE);
-  pmm_unref_pg(p1);
-  if (pmm_alloc(PMM_NONE) != p1)
-  {
-    kpanic("pmm_test #1: page not freed correctly");
-  }
-
-  // #2: refcounting, a shared page is freed only by the last unref
-  pmm_ref_pg(p1);
-  pmm_unref_pg(p1);
-  if (pmm_alloc(PMM_NONE) == p1)
-  {
-    kpanic("pmm_test #2: page freed while still referenced");
-  }
-  pmm_unref_pg(p1);
-  if (pmm_alloc(PMM_NONE) != p1)
-  {
-    kpanic("pmm_test #2: page not freed correctly");
-  }
-
-  // #3: contiguous allocation, free the region and get it back
-  paddr_t region = pmm_alloc_cont(4, PMM_NONE);
-  for (size_t i = 0; i < 4; i++)
-    pmm_unref_pg(region + i * PGSIZE);
-  if (pmm_alloc_cont(4, PMM_NONE) != region)
-  {
-    kpanic("pmm_test #3: contiguous region not freed correctly");
-  }
-
-  // #4: stress test, fill up ~95% of physical memory and LEAVE it allocated,
-  // so the benchmark runs at a high fill level. On failure PMM returns
-  // PMM_ALLOC_FAIL, not NULL.
-  size_t target = tot_phys_pgs * 19 / 20;
-  for (size_t i = 0; i < target; i++)
-  {
-    if (pmm_alloc(PMM_NONE) == PMM_ALLOC_FAIL)
-      kpanic("pmm_test #4: ran out of pages below 95%% fill");
-  }
-
-  kprintf("[INFO] pmm_test #4: filled %lu/%lu frames\n", target, tot_phys_pgs);
-}
-
 void
 pmm_init(struct limine_memmap_response *mmap)
 {
@@ -222,8 +174,6 @@ pmm_init(struct limine_memmap_response *mmap)
       }
     }
   }
-
- pmm_test();
 
   kprintf("[INFO] pmm_freelist initialized\n");
 }

@@ -5,14 +5,16 @@
  * call this one to handle the fault.
  * VMAs shouldn't be known to the architecture specific code.
  */
+#include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/mm/vma.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
 
-/* Those are architecture indipendent page fault flags. 
+/* Those are architecture indipendent page fault flags.
    Note that some are mutually exclusive. */
 #define PF_PROT       (1ULL << 0)    // page protection violation
 #define PF_WRITE      (1ULL << 1)    // write operation
@@ -24,16 +26,16 @@ static inline int
 vma_access_allowed(struct vm_area *vma, uint64_t flags) {
     // a write caused the #PF
     if (flags & PF_WRITE) {
-        if (!(vma->flags & VMA_WRITE)) return 0; 
+        if (!(vma->flags & VMA_WRITE)) return 0;
     } else {
-        if (!(vma->flags & VMA_READ)) return 0; 
+        if (!(vma->flags & VMA_READ)) return 0;
     }
 
     // a non-executable region caused the #PF
     if (flags & PF_INSTRFETCH) {
         if (!(vma->flags & VMA_EXEC)) return 0;
     }
-    
+
     // OK
     return 1;
 }
@@ -50,7 +52,7 @@ vma_flags_to_vmm(struct vm_area *vma) {
 }
 
 int
-mm_page_fault(vaddr_t fault, uint64_t flags) { 
+mm_page_fault(vaddr_t fault, uint64_t flags) {
     struct process *proc = arch_cpu_get()->proc;
 
     // usermode caused the fault
@@ -59,8 +61,8 @@ mm_page_fault(vaddr_t fault, uint64_t flags) {
         struct vm_area *v = vma_search(proc->mm->vma_head, fault);
         if (!v)
             goto sigsegv;
-        
-        // a vma exists, determine why we faulted 
+
+        // a vma exists, determine why we faulted
         if (flags & PF_PROT) {
             // we faulted because of page table's permissions violation
             if (vma_access_allowed(v, flags)) {
@@ -72,7 +74,15 @@ mm_page_fault(vaddr_t fault, uint64_t flags) {
             // fault -> page not present
             if (vma_access_allowed(v, flags)) {
                 if (v->flags & VMA_FILEBACKED) {
-                    // FILE BACKED MAPPING TODO
+                    /* FILE BACKED LAZY PAGING
+                     * simply map the associated VMA on physical pages and copy the
+                     * file's content there.
+                     *
+                     * TODO: assumes a single 4KB page for now.
+                     */
+                    paddr_t pa = pmm_alloc(PMM_ZERO);
+                    memcpy((void*)P2V(pa), (void*)v->backing + v->backing_offset, v->backing_size);
+                    vmm_map(proc->mm->pgtable, fault, pa, vma_flags_to_vmm(v));
                 } else {
                     // DEMAND PAGING (virtually allocate a zeroed page frame)
                     vmm_map(proc->mm->pgtable, fault, pmm_alloc(PMM_ZERO), vma_flags_to_vmm(v));
@@ -81,20 +91,20 @@ mm_page_fault(vaddr_t fault, uint64_t flags) {
                 goto sigsegv;
             }
         }
-       
+
         // fault handled correctly
         return 2;
-    } else { 
+    } else {
         // fault happened in kernel mode
         goto kpanic;
     }
-    
+
 sigsegv:
     // kill the offending process
     kprintf("SIGSEGV at 0x%p\n", fault);
     return 1;
 
 kpanic:
-    // unrecoverable, let caller kpanic 
+    // unrecoverable, let caller kpanic
     return 0;
 }

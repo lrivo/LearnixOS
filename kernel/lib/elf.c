@@ -8,51 +8,12 @@
 #include <learnix/lib/kprintf.h>
 #include <learnix/arch/memlayout.h>
 
-/* Tries to map a PT_LOAD segment */
-static int
+/* Tries to map a PT_LOAD segment. Uses lazy paging, we only create VMAs and leave
+ * the actual mapping at page fault time. */
+int
 elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *mm)
 {
-  size_t npages, i, n;
-  paddr_t pa;
-  int flags = VMM_FLAG_USER;
-
-  // how many virtual pages are needed for this section (ceil roundup)
-  npages = ((size_t)phent->p_memsz + PGSIZE - 1) / PGSIZE;
-
-  /* map pg with the section's requested flags.
-   * by default this flags means user readable. */
-  if (phent->p_flags & PF_W)
-    flags |= VMM_FLAG_WRITE;
-  if (phent->p_flags & PF_X)
-    flags |= VMM_FLAG_EXEC;
-  if (phent->p_flags & PF_W && phent->p_flags & PF_X)
-    return -1;  // respect W^X policy
-
-  // FIMME: bad solution for multi-page sections
-  for (i = 0; i < npages; i++) {
-      // get a physical page
-      pa = pmm_alloc(PMM_ZERO);
-      if (pa == PMM_ALLOC_FAIL)
-          return -1;    // TODO goto cleanup
-
-      // always copy PGSIZE unless we are on the last page
-      if (i < npages - 1) {
-          n = PGSIZE;
-       } else {
-           n = npages == 1 ? phent->p_filesz : phent->p_filesz - (PGSIZE * (npages - 1));
-       }
-
-      // copy the section's byte into the page
-      memcpy((void*)P2V(pa), (void*)hdr + phent->p_offset + (i * PGSIZE), n);
-
-      // insert the mapping
-      if (vmm_map(mm->pgtable, (vaddr_t)phent->p_vaddr + (i * PGSIZE), pa, flags) < 0)
-        return -1;  // TODO goto cleanup
-  }
-
-  /* the segment comes from the ELF file: describe it with a
-     file-backed VMA (the flag is metadata for now, nothing
-     enforces it yet) */
+  // prepare VMA flags for this ELF section (FILEBACKED)
   uint64_t vma_flags = VMA_FILEBACKED;
   if (phent->p_flags & PF_R)
     vma_flags |= VMA_READ;
@@ -61,25 +22,22 @@ elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc
   if (phent->p_flags & PF_X)
     vma_flags |= VMA_EXEC;
 
-  struct vm_area *vma = vma_alloc((vaddr_t)phent->p_vaddr,
-                                  (vaddr_t)phent->p_vaddr + phent->p_memsz,
-                                  vma_flags);
+  // insert the VMA
+  struct vm_area *vma = vma_alloc(
+      (vaddr_t)phent->p_vaddr,
+      (vaddr_t)phent->p_vaddr + phent->p_memsz,
+      vma_flags
+  );
   if (!vma || !vma_insert(&mm->vma_head, vma))
     return -1;
 
-  /* record the image layout in the memory descriptor */
-  if (phent->p_flags & PF_X)
-  {
-    mm->text_start = (vaddr_t)phent->p_vaddr;
-    mm->text_end = (vaddr_t)phent->p_vaddr + phent->p_memsz;
-  }
-  else if (phent->p_flags & PF_W)
-  {
-    mm->data_start = (vaddr_t)phent->p_vaddr;
-    mm->data_end = (vaddr_t)phent->p_vaddr + phent->p_filesz;
-    mm->bss_start = mm->data_end;
-    mm->bss_end = (vaddr_t)phent->p_vaddr + phent->p_memsz;
-  }
+  /* vma->backing is just the virtual address of the Limine file. Must be
+   * replaced with a struct inode* to allow fetching disk files. */
+  vma->backing = (vaddr_t)hdr;
+  // byte offset from the start of the file
+  vma->backing_offset = phent->p_offset;
+  // how many bytes to actually copy (the rest is assumed zero)
+  vma->backing_size = phent->p_filesz;
 
   return 0;
 }
@@ -90,8 +48,7 @@ elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *m
 {
   paddr_t pg = pmm_alloc(PMM_ZERO);
 
-  int ret = vmm_map(mm->pgtable, (vaddr_t)USR_STACK, pg,
-           VMM_FLAG_WRITE | VMM_FLAG_USER);
+  int ret = vmm_map(mm->pgtable, (vaddr_t)USR_STACK, pg, VMM_FLAG_WRITE | VMM_FLAG_USER);
   if (ret < 0)
     return ret;
 

@@ -45,12 +45,12 @@ sys_execve (struct intr_trap_frame *tf)
   char path[PATH_MAX];                              // kernel copy of ARG0
 
   // pathname is a userspace pointer: copy it into kernel memory first
-  ret = arch_strncpy_from_user (path, (const char*)ARG0 (tf), sizeof (path));
+  ret = arch_strncpy_from_user(path, (const char*)ARG0 (tf), sizeof (path));
   if (ret < 0)
     goto bad;   // this returns -EFAULT
 
-  // get the ELF file
-  struct limine_file *f = limine_module_get (path);
+  // TODO: this will need to pass from an inode, instead of limine module
+  struct limine_file *f = limine_module_get(path);
   if (!f) {
     ret = -1;
     goto bad;
@@ -58,14 +58,14 @@ sys_execve (struct intr_trap_frame *tf)
   elf = (struct elf64_hdr*)f->address;
 
   // validate the ELF program
-  ret = elf_validate (elf);
+  ret = elf_validate(elf);
   if (ret < 0)
     goto bad;
 
   // allocate a new address space (page table + empty VMA list)
-  mm = mm_alloc ();
+  mm = mm_alloc();
 
-  // try to load the ELF image into it
+  // try to load the ELF image into the new address space
   ret = elf_load(elf, mm);
   if (ret < 0)
     goto bad;
@@ -83,7 +83,7 @@ sys_execve (struct intr_trap_frame *tf)
   arch_proc_exec(curr, elf->e_entry, (vaddr_t)USR_STACK + PGSIZE);
 
   // unwind the syscall stack frame
-  kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
+  //kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
   mm_print_maps (curr->mm, path);
   return;
 

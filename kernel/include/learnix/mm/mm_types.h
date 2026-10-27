@@ -23,6 +23,11 @@ struct vm_area {
     uint64_t flags;
     // next vma for the process
     struct vm_area *next;
+
+    // (only) VMA_FILEBACKED
+    vaddr_t  backing;           // file backing this VMA
+    uint64_t backing_offset;    // offset from file start
+    uint64_t backing_size;      // actual bytes to copy
 };
 
 /* This struct describes one virtual address space: the page table
