@@ -44,8 +44,7 @@ sys_execve (struct intr_trap_frame *tf)
   struct elf64_hdr *elf;                            // ELF header
   char path[PATH_MAX];                              // kernel copy of ARG0
 
-  // pathname is a userspace pointer: copy it into kernel memory first
-  ret = arch_strncpy_from_user(path, (const char*)ARG0 (tf), sizeof (path));
+  ret = arch_strncpy_from_user(path, (const char*)ARG0(tf), sizeof(path));
   if (ret < 0)
     goto bad;   // this returns -EFAULT
 

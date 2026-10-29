@@ -5,6 +5,7 @@
  * call this one to handle the fault.
  * VMAs shouldn't be known to the architecture specific code.
  */
+#include "learnix/mm/mm_types.h"
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
 #include <learnix/mm/vmm.h>
@@ -13,6 +14,7 @@
 #include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/lib/kpanic.h>
+#include <stdint.h>
 
 /* Those are architecture indipendent page fault flags.
    Note that some are mutually exclusive. */
@@ -55,49 +57,44 @@ int
 mm_page_fault(vaddr_t fault, uint64_t flags) {
     struct process *proc = arch_cpu_get()->proc;
 
-    // usermode caused the fault
-    if (flags & PF_USER) {
-        // does a vma with this address exists?
-        struct vm_area *v = vma_search(proc->mm->vma_head, fault);
-        if (!v)
-            goto sigsegv;
-
-        // a vma exists, determine why we faulted
-        if (flags & PF_PROT) {
-            // we faulted because of page table's permissions violation
-            if (vma_access_allowed(v, flags)) {
-                // TODO: need to change HW flags
-            } else {
-                goto sigsegv;
-            }
-        } else {
-            // fault -> page not present
-            if (vma_access_allowed(v, flags)) {
-                if (v->flags & VMA_FILEBACKED) {
-                    /* FILE BACKED LAZY PAGING
-                     * simply map the associated VMA on physical pages and copy the
-                     * file's content there.
-                     *
-                     * TODO: assumes a single 4KB page for now.
-                     */
-                    paddr_t pa = pmm_alloc(PMM_ZERO);
-                    memcpy((void*)P2V(pa), (void*)v->backing + v->backing_offset, v->backing_size);
-                    vmm_map(proc->mm->pgtable, fault, pa, vma_flags_to_vmm(v));
-                } else {
-                    // DEMAND PAGING (virtually allocate a zeroed page frame)
-                    vmm_map(proc->mm->pgtable, fault, pmm_alloc(PMM_ZERO), vma_flags_to_vmm(v));
-                }
-            } else {
-                goto sigsegv;
-            }
-        }
-
-        // fault handled correctly
-        return 2;
-    } else {
-        // fault happened in kernel mode
+    // faults on kernel addresses are never recoverable for now
+    if (IS_KVADDR(fault))
         goto kpanic;
+
+    // does fault falls in a VMA?
+    struct vm_area *vma = vma_search(proc->mm->vma_head, fault);
+    if (!vma)
+        goto sigsegv;
+
+    if (flags & PF_PROT) {
+        // CAUSE: protection fault
+        if (!vma_access_allowed(vma, flags))
+            goto sigsegv;
+        // TODO: change HW flags
+    } else {
+        // CAUSE: non present page
+        if (!vma_access_allowed(vma, flags))
+            goto sigsegv;
+        if (vma->flags & VMA_FILEBACKED) {
+            // how many bytes into the vma
+            uint64_t vma_off = (PGROUNDDOWN(fault) - vma->start);
+            // how many bytes to actually copy, clamped to PGSIZE
+            uint64_t n = vma->backing_size - vma_off;
+            if (n > PGSIZE) n = PGSIZE;
+            // request a physical frame
+            paddr_t pa = pmm_alloc((n == PGSIZE) ? PMM_NONE : PMM_ZERO);
+            // copy file contents into it
+            memcpy((void*)P2V(pa), (void*)vma->backing + vma->backing_offset + vma_off, n);
+            // virtually map it at fault
+            vmm_map(proc->mm->pgtable, fault, pa, vma_flags_to_vmm(vma));
+        } else {
+            // anonymous VMA
+            vmm_map(proc->mm->pgtable, fault, pmm_alloc(PMM_ZERO), vma_flags_to_vmm(vma));
+        }
     }
+
+    // fault handled correctly
+    return 2;
 
 sigsegv:
     // kill the offending process

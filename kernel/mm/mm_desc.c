@@ -1,3 +1,4 @@
+#include "learnix/mm/mm_types.h"
 #include <learnix/mm/mm.h>
 #include <learnix/mm/kmalloc.h>
 #include <learnix/mm/vma.h>
@@ -15,9 +16,33 @@ mm_alloc (void)
   if (!mm)
     return NULL;
 
-  mm->pgtable = uvm_alloc ();
+  mm->pgtable = uvm_alloc();
 
   return mm;
+}
+
+int
+mm_copy(struct mm_desc *old, struct mm_desc *new) {
+    if (!old || !new || old == new) return -1;
+
+    // duplicate VMAs
+    for (struct vm_area *v = old->vma_head; v != NULL; v = v->next) {
+        struct vm_area *dup = vma_alloc(v->start, v->end, v->flags);
+        if (v->flags & VMA_FILEBACKED) {
+            dup->backing = v->backing;
+            dup->backing_offset = v->backing_offset;
+            dup->backing_size = v->backing_size;
+        }
+        vma_insert(&new->vma_head, dup);
+    }
+
+    /* duplicate present pages.
+     * NOTE: don't remove this, otherwise the child will have
+     * an empty stack and lose .data/.bss overwritten parts
+     * by his parent. */
+    uvm_copy(new->pgtable, old->pgtable);
+
+    return 0;
 }
 
 void
