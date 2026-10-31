@@ -1,20 +1,30 @@
+#include "learnix/arch/interrupts.h"
+#include "learnix/arch/types.h"
+#include "learnix/mm/mm_types.h"
+#include "learnix/mm/vmm.h"
 #include <learnix/cpu.h>
 #include <learnix/syscall.h>
 #include <learnix/mm/vma.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/lib/kprintf.h>
 
-static inline void vma_print(struct vm_area *curr) {   
-    while (curr) {
-        kprintf("0x%p 0x%p - ", curr->start, curr->end);  
-        if (curr->flags & VMA_READ) kprintf("R "); 
-        if (curr->flags & VMA_WRITE) kprintf("W "); 
-        if (curr->flags & VMA_EXEC) kprintf("X "); 
-        kprintf("\n");
-        curr = curr->next;
-    }
-} 
+static inline uint64_t
+prot_to_vma_flags(int prot) {
+    uint64_t flags = 0;
+    if (prot & PROT_NONE)
+        return flags;
+    if (prot & PROT_READ)
+        flags |= VMA_READ;
+    if (prot & PROT_WRITE)
+        flags |= VMA_WRITE;
+    if (prot & PROT_EXEC)
+        flags |= VMA_EXEC;
+    return flags;
+}
 
+// REFACTOR: this will become a do_mmap() and the sys_mmap()
+// will be moved in the syscall subsystem and just call do_mmap()
+// after argument validation
 void
 sys_mmap(struct intr_trap_frame *tf) {
     struct process *curr = arch_cpu_get()->proc;
@@ -22,42 +32,35 @@ sys_mmap(struct intr_trap_frame *tf) {
     vaddr_t addr = (vaddr_t)ARG0(tf);
     size_t length = (size_t)ARG1(tf);
     int prot = (int)ARG2(tf);
-    int flags = (int)ARG3(tf);
-    
-    // specific address passed 
+    //int flags = (int)ARG3(tf);          // IGNORED, MAP_PRIVATE is assumed for now
+
+    // POSIX: if len is 0 mmap shall fail
+    if (length == 0) {
+        ret = -EINVAL; goto bad;
+    }
+
+    // specific address passed
     if (addr != 0) {
-        // must be in userspace 
+        // must be in userspace
         if (!IS_USRADDR(addr)) {
             ret = -EINVAL; goto bad;
         }
-
         // must not be already mapped in a VMA
         if (vma_search(curr->mm->vma_head, addr)) {
-            ret = -EEXIST; goto bad; 
+            ret = -EEXIST; goto bad;
         }
     } else {
         // TODO: find a valid addess, skip for now
-        ret = -EINVAL; goto bad;
+        ret = -ENOTSUP; goto bad;
     }
-    
-    // convert prot into vma flags 
-    size_t vma_flags = 0;
-    if (prot & PROT_READ)
-        vma_flags |= VMA_READ;
-    if (prot & PROT_WRITE)
-        vma_flags |= VMA_WRITE;
-    if (prot & PROT_EXEC)
-        vma_flags |= VMA_EXEC;
 
-    // now we can insert the address
-    struct vm_area *new = vma_alloc(addr, addr + 4096, vma_flags);
+    // create a VMA for this mapping
+    struct vm_area *new = vma_alloc(addr, addr + PGROUNDUP(length), prot_to_vma_flags(prot));
     if (vma_insert(&curr->mm->vma_head, new)) {
         RET(tf) = (size_t)addr;
     } else {
         RET(tf) = -EEXIST; goto bad;
     }
-
-    vma_print(curr->mm->vma_head);
     return;
 
 bad:
@@ -66,5 +69,31 @@ bad:
 
 void
 sys_munmap(struct intr_trap_frame *tf) {
-    RET(tf) = -EINVAL;
+    vaddr_t addr = (vaddr_t)ARG0(tf);
+    size_t length = (size_t)ARG1(tf), ret = 0;
+
+    if (addr == 0 || IS_KVADDR(addr)) {
+        ret = -EINVAL; goto bad;
+    }
+    if (length == 0) {
+        ret = -EINVAL; goto bad;
+    }
+
+    struct process *p = arch_cpu_get()->proc;
+    struct vm_area *vma = vma_search(p->mm->vma_head, addr);
+    if (!vma) {
+        ret = -EINVAL; goto bad;
+    }
+    // FIXME: since I don´t have a way to split a vma in two for now
+    // I'll just require to delete the entire mapping
+    if (vma->end - vma->start != length) {
+        ret = -EINVAL; goto bad;
+    }
+    // remove the VMA entry
+    vma_remove(&p->mm->vma_head, vma);
+    // finally, update the page tables
+    vmm_unmap_range(p->mm->pgtable, vma->start, (vma->end - vma->start) / PGSIZE);
+
+bad:
+    RET(tf) = ret;
 }
