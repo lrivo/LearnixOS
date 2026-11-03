@@ -1,43 +1,38 @@
 # LearnixOS: a modular UNIX-like kernel for students
-
-LearnixOS is a didactic x86-64 kernel written in C and NASM assembly
-It was built as a bachelor's thesis to make operating systems *concrete*: every subsystem is small, readable, and -- most importantly -- **swappable**, so you can compare competing designs on a real machine.
+LearnixOS started as my bachelor's thesis project to deep dive into operating systems in a practical way, but later evolved in an effort to create the **best educational kernel** with a **modular** approach. <br>
 
 Please read the full documentation [here](docs/README.md).
 
-## Why is Learnix different?
+## Modularity
+Modularity means that LearnixOS supports, and includes, different implementations for the same kernel component. <br>
+For example, the Physical Memory Manager, might be implemented with:
+- a bitmap
+- a linked list of free frames
+- a buddy allocator
 
-Educational OSes do exist, most notably xv6 and Minix3 (which I used a lot
-myself). However, with Learnix, I wanted two important things:
-
-1. **A modular design.** Core kernel components like the physical memory
-   manager, the kernel heap, the schedulers and (in the future) security
-   mitigations are swappable at build time.
-2. **A modern build system** (meson + ninja) instead of a plain Makefile.
-
-Because components are selected at compile time, you can see **why one algorithm
-beats another** (a bitmap PMM vs the Buddy allocator, round-robin vs lottery
-scheduling) **not only on the textbook but on a real system**.
+Existing educational resources, like xv6, will only show **one possibility** while Learnix aims to show all of them. <br>
+I'd argue that seeing, and most importantly **trying** more implementations, allows one to understand why modern systems use a specif one.
 
 ## LLM usage
+I am a big believer in LLMs for helping making sense of complex topics, and OsDev is certainly one. <br>
+However, for this project, I have one personal rule:
+> don't delegate important tasks to a coding agent
 
-I'm a big believer in LLMs for making sense of complex topics, and OS dev is
-certainly one. That's why the repo includes some Opencode skills to help you
-follow the code. However, the project itself was developed **without agentic
-coding**: by hand. 
+For example:
+- ❌ "Implement the SLAB allocator as a swappable kernel heap"
+- ✅ "Create a new userspace program called xxx"
 
-Why? because offloading a project like this to an agent would have cost me all the learnig value and the deep understanding of OS concepts that comes with actually writing the code.
-I still confronted with AI for my design and implementation decisions afterwards but **never asking to develop instead of me**.
+Documentation is mostly LLM-written for now, but I'll try to rewrite the important parts myself.
 
 ## Build
 
-Dependencies:
-
+### Dependencies
+Make sure to install those packages:
 - `clang`
 - `ld.lld`
 - `meson`
 - `ninja`
-- `xorriso`
+- `xorriso` (doesn't exist on MacOS)
 - `qemu-system-x86_64`
 
 First fetch the dependencies (Limine, OVMF, freestanding headers):
@@ -45,35 +40,29 @@ First fetch the dependencies (Limine, OVMF, freestanding headers):
 ./fetch-deps.sh
 ```
 
-Then configure the build. Pick the kernel components you want to compare --
-`meson.options` lists every available knob:
+### Configuration
+Then configure the build with the kernel components you prefer:
 ```bash
-meson setup build -Dsched=round_robin -Dpmm=bitmap
+meson setup <build-folder> -Dsched=xxx -Dpmm=xxx -Dkheap=xxx
 ```
+Check `meson.option` to see all the available components.
 
-Or use `setup.sh` for the default configuration.
+Or just use `setup.sh` for the default configuration.
 
-Changed your mind? Reconfigure:
-
+### Compile and boot in QEMU
 ```bash
-meson configure build -Dsched=lottery
-```
-
-Finally, compile and boot in QEMU:
-
-```bash
-ninja -C build run
+ninja -C <build-folder> run
 ```
 
 For debugging:
 
 ```bash
-ninja -C build gdb
+ninja -C <build-folder> gdb
 
 (gdb) target remote localhost:1234
+(gdb) file <build-folder>/kernel/kernel.elf
 ```
 
 ## Credits
-
 - https://codeberg.org/Limine/limine-c-template-x86-64
 - https://github.com/mpaland/printf

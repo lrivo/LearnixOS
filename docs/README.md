@@ -58,7 +58,8 @@ the two subsystems opened below.
 ## Subsystems
 Detailed, code-walking documentation for each part of the kernel:
 
-- [arch/ - CPU, GDT, IDT, paging, context switch, syscall trap](../kernel/arch/README.md)
+- [arch/ - Architecture Dependent Interfaces](../kernel/arch/README.md)
+  - [amd64 - GDT, IDT, LAPIC, HPET, ...](amd64/README.md)
 - [mm/ - Memory Management](../kernel/mm/README.md)
 - [proc/ - Processes](../kernel/proc/README.md)
 - [sched/ - Scheduler](../kernel/sched/README.md)
@@ -70,7 +71,7 @@ Detailed, code-walking documentation for each part of the kernel:
 - [security/ - Canaries and the CSPRNG](../kernel/security/README.md)
 - [include_rules/ - How headers & arch portability are laid out](include_rules.md)
 
-## References
+## Useful Resources
+- [OSDev Wiki](https://wiki.osdev.org)
 - [Operating Systems: Three Easy Pieces](https://ostep.org) - Arpaci, Dusseau
 - [Understanding the Linux Kernel 3rd Edition](https://www.cs.utexas.edu/~rossbach/cs380p/papers/ulk3.pdf) - Daniel P. Bovet, Marco Cesati, 2005
-- [OSDev Wiki](https://wiki.osdev.org)
