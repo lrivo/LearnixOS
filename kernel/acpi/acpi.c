@@ -3,6 +3,7 @@
  *  and populate a generalized table with the most important
  *  informations that arch-specific code can then use.
  */
+#include "learnix/lib/kprintf.h"
 #include <learnix/acpi.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/lib/kpanic.h>
@@ -44,6 +45,14 @@ fadt_parse (struct fadt *fadt)
 
   // 8042 PS/2 controller support (bit 1 set)
   acpi_summary.ps2_exists = fadt->iapc_boot_arch & 2;
+}
+
+static void
+hpet_parse(struct hpet *hpet) {
+    if (!xsdt_validate_checksum ((struct xsdt *)hpet))
+      kpanic ("hpet_parse: invalid checksum");
+
+   acpi_summary.hpet_addr = hpet->address;
 }
 
 static void
@@ -96,6 +105,8 @@ xsdt_parse (struct xsdt *xsdt)
       madt_parse ((struct madt *)e);
     else if (memcmp (e->signature, "FACP", 4) == 0)
       fadt_parse ((struct fadt *)e);
+    else if (memcmp(e->signature, "HPET", 4) == 0)
+        hpet_parse((struct hpet*)e);
   }
 
   return;
@@ -145,4 +156,10 @@ paddr_t
 acpi_get_ioapic (void)
 {
   return acpi_summary.ioapic_addr;
+}
+
+paddr_t
+acpi_get_hpet (void)
+{
+  return acpi_summary.hpet_addr;
 }

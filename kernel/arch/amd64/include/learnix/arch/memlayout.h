@@ -24,6 +24,7 @@ extern paddr_t kernel_phys_base;
 // TODO: remember to not hardcode this when KASLR will be on
 #define KMALLOC_START 0xFFFF808000000000ULL // pml4[257]
 #define LAPIC_VIRT_BASE 0xffff900000000000ULL
+#define HPET_VIRT_BASE LAPIC_VIRT_BASE + PGSIZE
 
 /* Page frames math. */
 #define PGSIZE 4096
@@ -36,4 +37,4 @@ extern paddr_t kernel_phys_base;
 
 /* Address validation macros. */
 #define IS_USRADDR(va) ((uintptr_t)(va) < KERN_SPLIT_START)
-#define IS_KVADDR(va) ((uintptr_t)(va) >= KERN_SPLIT_START) 
+#define IS_KVADDR(va) ((uintptr_t)(va) >= KERN_SPLIT_START)

@@ -3,6 +3,7 @@
 #include "idt.h"
 #include "ioapic.h"
 #include "lapic.h"
+#include "hpet.h"
 #include <learnix/cpu.h>
 #include <learnix/syscall.h>
 #include <learnix/lib/kprintf.h>
@@ -33,7 +34,7 @@ arch_stage_1 ()
    * early exceptions */
   gdt_init ();
   idt_init ();
-  
+
   // enable the NX bit
   wrmsr (0xC0000080, rdmsr(0xC0000080) | (1ULL << 11));
 
@@ -55,9 +56,10 @@ arch_stage_1 ()
 void
 arch_stage_2 ()
 {
-  lapic_init ();
-  ioapic_init ();
-  
+  hpet_init();
+  lapic_init();
+  ioapic_init();
+
   // FIXME: setup FS at this address for every process
   wrmsr (0xC0000100, (uint64_t)0x300000);
 
@@ -119,7 +121,7 @@ ssize_t arch_copy_from_user
 (void *dest, void *src, size_t n) {
     if (!IS_KVADDR(dest) || !IS_USRADDR(src))
         return -EFAULT;
-    
+
     asm volatile ("stac" ::: "cc");
     memcpy(dest, src, n);
     asm volatile ("clac" ::: "cc");
@@ -131,7 +133,7 @@ ssize_t arch_copy_to_user
 (void *dest, void *src, size_t n) {
     if (!IS_USRADDR(dest) || !IS_KVADDR(src))
         return -EFAULT;
-    
+
     asm volatile ("stac" ::: "cc");
     memcpy(dest, src, n);
     asm volatile ("clac" ::: "cc");
@@ -167,18 +169,18 @@ arch_cpu_hcf ()
     asm volatile ("hlt");
 }
 
-extern int rdseed_u64(uint64_t* out);
 
 int
 arch_rand_bytes(void *vec, size_t n)
 {
   uint8_t *v = (uint8_t*)vec;
   uint64_t rdseed, can_copy;
-  
+
   while (n > 0)
   {
     // generate a random number
-    rdseed = 0x4141414141414141;
+    extern int rdseed_u64(uint64_t* out);
+    rdseed_u64(&rdseed);
 
     // how many bytes can we copy?
     can_copy = n < 8 ? n : 8;

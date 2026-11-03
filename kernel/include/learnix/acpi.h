@@ -13,8 +13,9 @@ struct acpi_intr_override
 
 struct acpi_summary
 {
-  bool ps2_exists;     // does the PS/2 controller exists?
-  paddr_t ioapic_addr; // MMIO physical address of the I/O APIC
+  bool ps2_exists;      // does the PS/2 controller exists?
+  paddr_t ioapic_addr;  // MMIO physical address of the I/O APIC
+  paddr_t hpet_addr;    // MMIO physical address of the HPET
 
   struct acpi_intr_override overrides[16];
   int overrides_len;
@@ -164,6 +165,17 @@ struct madt_entry_ioapic_nmi
   uint32_t gsi;
 } __attribute__ ((packed));
 
+// HPET
+struct hpet {
+   struct xsdt_hdr hdr;
+   uint32_t event_timer_block_id;
+   uint32_t reserved;
+   uint64_t address;
+   uint8_t id;
+   uint16_t min_ticks;
+   uint8_t page_protection;
+} __attribute__ ((packed));
+
 /* ACPI parsing entrypoint called early by kmain(). */
 void acpi_init ();
 
@@ -172,3 +184,6 @@ bool acpi_get_ps2 (void);
 
 /* Returns the I/O APIC physical address found in MADT. */
 paddr_t acpi_get_ioapic ();
+
+/* Returns the HPET physical address found in MADT. */
+paddr_t acpi_get_hpet();

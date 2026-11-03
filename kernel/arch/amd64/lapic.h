@@ -1,3 +1,7 @@
+/*
+ * Local Advanced Interrupt Controller
+ * AMD64 Architecture Programmer's Manual Volume 2: System Programming
+ */
 #pragma once
 #include <learnix/arch/types.h>
 
@@ -14,13 +18,23 @@
 #define APIC_BASE_MSR 0x1B
 
 /* LAPIC MMIO register offsets. */
-#define LAPIC_EOI 0xB0 // End-Of-Interrupt Register
-#define LAPIC_SVR 0xF0 // Spurious Vector Register
-#define LAPIC_TIMER_LVT 0x320
-#define LAPIC_TIMER_ICR 0x380
-#define LAPIC_TIMER_DCR 0xE0
+#define LAPIC_ID  0x20              // APIC ID Register
+#define LAPIC_EOI 0xB0              // End-Of-Interrupt Register
+#define LAPIC_SVR 0xF0              // Spurious Vector Register
+#define LAPIC_TIMER_LVT 0x320       // Local Vector Table Register
+#define LAPIC_TIMER_ICR 0x380       // Initial Count Register
+#define LAPIC_TIMER_CCR 0x390       // Current Count Register
+#define LAPIC_TIMER_DCR 0x3E0       // Divide Configuration Register
 
-/* Returns the LAPIC ID of the active core. */
-uint8_t lapic_get_id (void);
+#define N_CALIBRATION 5             // How many calibration measures to take
 
-void lapic_init ();
+// === FUNCTIONS === //
+/* Per-code LAPIC initialization and calibration. */
+void lapic_init();
+
+/* Uses the HPET as a timer source to determine the number
+ * of LAPIC ticks per N milliseconds. */
+uint64_t lapic_ms_to_ticks(size_t ms);
+
+/* Returns the LAPIC ID of the calling CPU core. */
+uint8_t lapic_get_id(void);

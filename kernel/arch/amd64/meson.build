@@ -5,6 +5,7 @@ amd64_src = files(
   'gdt.c',
   'idt.c',
   'ioapic.c',
+  'hpet.c',
   'isr_stubs.asm',
   'lapic.c',
   'paging.c',
