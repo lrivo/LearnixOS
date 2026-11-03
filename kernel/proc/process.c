@@ -1,6 +1,8 @@
+#include "learnix/scheduler.h"
 #include <learnix/arch/memlayout.h>
 #include <learnix/lib/string.h>
 #include <learnix/mm/kmalloc.h>
+#include <learnix/mm/mm.h>
 #include <learnix/mm/pmm.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/process.h>
@@ -12,7 +14,7 @@ static struct process *procs[PROCS_LEN] = { 0 };
 static inline pid_t get_next_pid()
 {
   for (pid_t i = 1; i < PROCS_LEN; i++)
-    if (procs[i] == NULL) return i;  
+    if (procs[i] == NULL) return i;
 
   return -1;
 }
@@ -23,12 +25,16 @@ proc_init (void)
   /* This idle process will just keep spinning in kernel mode,
      and it will be run if no other runnable process exists */
   struct process *idle = kzalloc (sizeof (struct process));
+  procs[0] = idle;
+
+  /* The idle process has no user address space, so we don't
+   * allocate his mm_desc with mm_alloc(). It will only use
+   * the mm->pgtable field. */
+  idle->mm = kzalloc (sizeof (struct mm_desc));
+  idle->mm->pgtable = vmm_get_kern_pgtable ();
+  idle->kstack = P2V(pmm_alloc (PMM_NONE));
   idle->pid = 0;
   idle->state = RUNNING;
-  idle->pgtable = vmm_get_kern_pgtable ();
-  idle->kstack = P2V(pmm_alloc (PMM_NONE));
-
-  procs[0] = idle;
 }
 
 struct process *
@@ -54,10 +60,13 @@ proc_create (void)
    * at every interrupt/exception/syscall.
    * We memcpy the kernel's page table root in
    * another physical page.
-   * NOTE: if the kernel where to add a new PML4
+   * BUG: if the kernel where to add a new PML4
    * mapping (x86_64) processes created before it
    * won't see it. */
-  p->pgtable = uvm_alloc();
+  p->mm = mm_alloc ();
+
+  // record the creation tick
+  p->sched_stats.creation_tick = ticks;
 
   procs[p->pid] = p;
 
@@ -68,13 +77,13 @@ proc_create (void)
 void
 proc_destroy(struct process *p)
 {
-  // free his page table
-  uvm_destroy(p->pgtable);
-  
+  // free his address space (VMAs, page table, descriptor)
+  mm_free (p->mm);
+
   /* Free his kernel stack. This can't be done by sys_exit() because
      it is executing on p->kstack herself. */
   pmm_unref_pg(V2P(p->kstack));
-  
+
   // release his pid
   procs[p->pid] = NULL;
 

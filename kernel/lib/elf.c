@@ -1,64 +1,65 @@
 #include "learnix/arch/types.h"
+#include <learnix/mm/mm.h>
 #include <learnix/mm/pmm.h>
+#include <learnix/mm/vma.h>
 #include <learnix/mm/vmm.h>
 #include <learnix/lib/elf.h>
 #include <learnix/lib/string.h>
 #include <learnix/lib/kprintf.h>
 #include <learnix/arch/memlayout.h>
 
-/* Tries to map a PT_LOAD segment */
-static int
-elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
+/* Tries to map a PT_LOAD segment. Uses lazy paging, we only create VMAs and leave
+ * the actual mapping at page fault time. */
+int
+elf_seg_loadable(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *mm)
 {
-  size_t npages, i, n;
-  paddr_t pa;
-  int flags = VMM_FLAG_USER;
-
-  // how many virtual pages are needed for this section (ceil roundup)
-  npages = ((size_t)phent->p_memsz + PGSIZE - 1) / PGSIZE;
-
-  /* map pg with the section's requested flags.
-   * by default this flags means user readable. */
+  // prepare VMA flags for this ELF section (FILEBACKED)
+  uint64_t vma_flags = VMA_FILEBACKED;
+  if (phent->p_flags & PF_R)
+    vma_flags |= VMA_READ;
   if (phent->p_flags & PF_W)
-    flags |= VMM_FLAG_WRITE;
+    vma_flags |= VMA_WRITE;
   if (phent->p_flags & PF_X)
-    flags |= VMM_FLAG_EXEC;
-  if (phent->p_flags & PF_W && phent->p_flags & PF_X)
-    return -1;  // respect W^X policy
+    vma_flags |= VMA_EXEC;
 
-  // FIMME: bad solution for multi-page sections
-  for (i = 0; i < npages; i++) {
-      // get a physical page
-      pa = pmm_alloc(PMM_ZERO);
-      if (pa == PMM_ALLOC_FAIL)
-          return -1;    // TODO goto cleanup
+  // insert the VMA
+  struct vm_area *vma = vma_alloc(
+      (vaddr_t)phent->p_vaddr,
+      (vaddr_t)phent->p_vaddr + phent->p_memsz,
+      vma_flags
+  );
+  if (!vma || !vma_insert(&mm->vma_head, vma))
+    return -1;
 
-      // always copy PGSIZE unless we are on the last page
-      if (i < npages - 1) {
-          n = PGSIZE;
-       } else {
-           n = npages == 1 ? phent->p_filesz : phent->p_filesz - (PGSIZE * (npages - 1));
-       }
-
-      // copy the section's byte into the page
-      memcpy((void*)P2V(pa), (void*)hdr + phent->p_offset + (i * PGSIZE), n);
-
-      // insert the mapping
-      if (vmm_map(pgdir, (vaddr_t)phent->p_vaddr + (i * PGSIZE), pa, flags) < 0)
-        return -1;  // TODO goto cleanup
-  }
+  /* vma->backing is just the virtual address of the Limine file. Must be
+   * replaced with a struct inode* to allow fetching disk files. */
+  vma->backing = (vaddr_t)hdr;
+  // byte offset from the start of the file
+  vma->backing_offset = phent->p_offset;
+  // how many bytes to actually copy (the rest is assumed zero)
+  vma->backing_size = phent->p_filesz;
 
   return 0;
 }
 
 /* Load the userspace stack into pgdir at a fixed address. */
 static int
-elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, vaddr_t pgdir)
+elf_seg_stack(struct elf64_hdr *hdr, struct elf64_phdr *phent, struct mm_desc *mm)
 {
   paddr_t pg = pmm_alloc(PMM_ZERO);
 
-  return vmm_map(pgdir, (vaddr_t)USR_STACK, pg,
-           VMM_FLAG_WRITE | VMM_FLAG_USER);
+  int ret = vmm_map(mm->pgtable, (vaddr_t)USR_STACK, pg, VMM_FLAG_WRITE | VMM_FLAG_USER);
+  if (ret < 0)
+    return ret;
+
+  /* the stack is not backed by any file: plain anonymous VMA */
+  struct vm_area *vma = vma_alloc((vaddr_t)USR_STACK,
+                                  (vaddr_t)USR_STACK + PGSIZE,
+                                  VMA_READ | VMA_WRITE | VMA_STACK);
+  if (!vma || !vma_insert(&mm->vma_head, vma))
+    return -1;
+
+  return 0;
 }
 
 int
@@ -84,7 +85,7 @@ elf_validate(struct elf64_hdr *hdr)
 }
 
 int
-elf_load(struct elf64_hdr *hdr, vaddr_t pgdir)
+elf_load(struct elf64_hdr *hdr, struct mm_desc *mm)
 {
   int ret = 0;
   // find the Program Header Table
@@ -96,10 +97,10 @@ elf_load(struct elf64_hdr *hdr, vaddr_t pgdir)
     switch (phent->p_type)
     {
       case PT_LOAD:
-        ret = elf_seg_loadable(hdr, phent, pgdir);
+        ret = elf_seg_loadable(hdr, phent, mm);
         break;
       case PT_STACK:
-        ret = elf_seg_stack(hdr, phent, pgdir);
+        ret = elf_seg_stack(hdr, phent, mm);
         break;
       default:
         continue;

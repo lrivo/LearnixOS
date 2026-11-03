@@ -1,29 +1,12 @@
 /*
- * vma.h (Virtual Memory Area) defines types and methods for managing virtual memory areas.
+ * vma.h (Virtual Memory Area) declares the methods for managing virtual memory areas.
  * A virtual memory area is a contiguous block of virtual memory that is mapped with the same permissions,
  * or even backed by a file, in the address space of a process.
  * It allows for things like deman paging and CoW fork.
+ * The types themselves (struct vm_area, VMA_* flags) live in mm_types.h.
  */
 #pragma once
-#include <learnix/types.h>
-
-/* Those are the values for vm_area->flags. */
-#define VMA_READ       (1UL << 0)
-#define VMA_WRITE      (1UL << 1)
-#define VMA_EXEC       (1UL << 2)
-#define VMA_FILEBACKED (1UL << 3)
-
-/* This struct represents a virtual memory area. */
-struct vm_area {
-    // first page-aligned virtual address
-    vaddr_t start;
-    // first virtual address NOT in this vma (exclusive)
-    vaddr_t end;
-    // virtual memory protections for this region
-    uint64_t flags;
-    // next vma for the process
-    struct vm_area *next;
-};
+#include <learnix/mm/mm_types.h>
 
 /* --------------------------------------------------- */
 

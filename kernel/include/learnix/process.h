@@ -2,7 +2,7 @@
 #include <learnix/sched_types.h>
 #include <learnix/arch/interrupts.h>
 #include <learnix/arch/process.h>
-#include <learnix/mm/vma.h>
+#include <learnix/mm/mm.h>
 #include <learnix/fs.h>
 
 #define NFDS 10
@@ -27,8 +27,10 @@ struct process
   /* process kernel stack */
   vaddr_t kstack;
 
-  /* page table root of this process */
-  vaddr_t pgtable;
+  /* memory descriptor: the whole address space of this process
+   * (page table, VMAs, image layout). The kernel stack above is
+   * deliberately NOT part of it: it is a per-process resource. */
+  struct mm_desc *mm;
 
   /* points to the interrupt struct frame on
    * the kernel stack (architecture-specific) */
@@ -43,10 +45,7 @@ struct process
   
   /* file descriptors table for this process */
   struct file *fds[NFDS];
-  
-  /* virtual memory areas for this process */
-  struct vm_area *vma_head;
-  
+
   /* scheduling */
   struct sched_stats sched_stats; // policy-independent statistics
   uint64_t priority;

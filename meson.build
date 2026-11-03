@@ -64,7 +64,7 @@ run_target('run',
     '-d', 'cpu_reset',
     '-enable-kvm',
     '-cpu', 'host',
-    '-serial', 'file:serial.log',
+    '-serial', 'mon:stdio',
   ],
   depends: iso_target
 )
@@ -81,7 +81,8 @@ run_target('gdb',
     '-no-shutdown',
     '-m', '2G',
     '-d', 'cpu_reset',
-    '-cpu', 'qemu64,+rdrand,+rdseed',
+    '-cpu', 'qemu64,+rdrand,+rdseed,+smap,+smep',
+    '-serial', 'mon:stdio',
     '-s', '-S',
   ],
   depends: iso_target

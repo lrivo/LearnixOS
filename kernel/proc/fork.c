@@ -1,5 +1,4 @@
-#include "learnix/lib/kprintf.h"
-#include "learnix/mm/vmm.h"
+#include "learnix/mm/mm.h"
 #include <learnix/cpu.h>
 #include <learnix/lib/string.h>
 #include <learnix/scheduler.h>
@@ -10,12 +9,17 @@ sys_fork(struct intr_trap_frame *tf)
 {
   struct process *parent = arch_cpu_get()->proc;
   struct process *child = proc_create();
-
   child->parent = parent;
-  child->sched_stats.creation_tick = ticks;
 
-  // copy parent's userspace mappings into the child
-  uvm_copy(child->pgtable, parent->pgtable);
+  // duplicate the parent's virtual address space
+  mm_copy(parent->mm, child->mm);
+
+  // copy parent's file descriptor table
+  for (int i = 0; i < NFDS; i++) {
+    if (!parent->fds[i]) continue;
+    child->fds[i] = parent->fds[i];
+    child->fds[i]->refcount++;
+  }
 
   /* initialize child->tf, the memcpy below will overwrite the
      trapframe this function sets up */
@@ -24,20 +28,11 @@ sys_fork(struct intr_trap_frame *tf)
   // copy parent's trapframe into child's
   memcpy(child->tf, parent->tf, sizeof (struct intr_trap_frame));
 
-  // copy parent's file descriptor table
-  for (int i = 0; i < NFDS; i++) {
-    if (!parent->fds[i]) continue;
-
-    child->fds[i] = parent->fds[i];
-    child->fds[i]->refcount++;
-  }
-
   // insert child in the runqueue
   sched_enqueue(child);
 
-  // set the return values
+  /* set the returns values: 0 for the child and child->pid
+   * for the parent. */
   RET(tf) = child->pid;
   RET(child->tf) = 0;
-
-  kprintfdbg("[fork] parent %d child %d\n", (int)parent->pid, (int)child->pid);
 }

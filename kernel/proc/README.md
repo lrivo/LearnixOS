@@ -13,8 +13,8 @@ of Learnix. It holds:
 
 - **`pid`** - process identifier, looked up as an index into the global `procs[]` table.
 - **`state`** - one of `RUNNING`, `READY`, `WAITING`, `ZOMBIE` (see below).
-- **`kstack`** - the *kernel* stack this process uses while executing kernel code. Every process has its own, so a syscall can't clobber another process's kernel control flow.
-- **`pgtable`** - the root of this process's page table (its private address space).
+- **`kstack`** - the *kernel* stack this process uses while executing kernel code. Every process has its own, so a syscall can't clobber another process's kernel control flow. Note that the kernel stack belongs to the *process*, not to its address space: it stays in the PCB even though everything else about user memory lives in `mm`.
+- **`mm`** - a [`struct mm_desc`](../include/learnix/mm/mm_types.h) pointer: the whole address space of the process in one object — its page table root, its sorted VMA list and the layout (`.text`/`.data`/`.bss`, program break) of the image loaded into it. Built with `mm_alloc()` in `proc_create()`, torn down by `mm_free()` in `proc_destroy()`. The idle process is the only exception: it runs in the kernel's address space, so its descriptor is a bare `kzalloc`'d one that is never destroyed (Linux's `init_mm` in spirit). See [`mm/`](../mm/README.md).
 - **`tf`** - pointer to the `intr_trap_frame` living on the kernel stack. This is how the CPU "remembers" where a *user-mode* process was suspended so it can resume it.
 - **`ctx`** - the architecture-specific register context used for context switching.
 - **`parent` / `child_wq`** - support for the `wait()`/`exit()` flow.

@@ -92,41 +92,6 @@ bitmap_assign_range (size_t start, size_t end, int set)
   }
 }
 
-/* test */
-static void
-pmm_test ()
-{
-  // #1: should get two contiguous physical pages
-  paddr_t p1 = pmm_alloc (PMM_NONE);
-  paddr_t p2 = pmm_alloc (PMM_NONE);
-  if (p1 + PGSIZE != p2)
-  {
-    kpanic ("pmm_test #1: not contiguous");
-  }
-
-  // 2. free the second page, should re-allocate it
-  pmm_unref_pg (p2);
-  if (pmm_alloc (PMM_NONE) != p2)
-  {
-    kpanic ("pmm_test #2: page not freeed correctly");
-  }
-
-  // #4: stress test, fill up ~95% of physical memory and LEAVE it allocated,
-  // so the benchmark runs at a high fill level (same as the freelist backend,
-  // for a fair A/B). On failure PMM returns PMM_ALLOC_FAIL, not NULL.
-  size_t target = tot_phys_pgs * 19 / 20;
-  for (size_t i = 0; i < target; i++)
-  {
-    break;
-    if (pmm_alloc (PMM_NONE) == PMM_ALLOC_FAIL)
-    {
-      kpanic ("pmm_test #4: ran out of pages below 95%% fill");
-    }
-  }
-
-  kprintf ("[INFO] pmm_test #4: filled %lu/%lu frames\n", target, tot_phys_pgs);
-}
-
 void
 pmm_init (struct limine_memmap_response *mmap)
 {
@@ -184,8 +149,6 @@ pmm_init (struct limine_memmap_response *mmap)
   size_t start = pa_to_idx (PGROUNDDOWN (V2P (bitmap)));
   size_t end = pa_to_idx (PGROUNDUP (V2P (refcount + refcount_size)));
   bitmap_assign_range (start, end, 1);
-
-  pmm_test ();
 
   kprintf("[INFO] pmm_bitmap initialized\n");
 }

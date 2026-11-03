@@ -1,4 +1,4 @@
-#include "learnix/mm/vmm.h"
+#include <learnix/mm/mm.h>
 #include <learnix/arch/memlayout.h>
 #include <learnix/cpu.h>
 #include <learnix/lib/elf.h>
@@ -8,22 +8,48 @@
 #include <learnix/syscall.h>
 #include <learnix/lib/limine_module.h>
 
+/* Prints mm's VMA list like Linux's /proc/<pid>/maps.
+ * The offset/dev/inode columns are omitted until VMAs carry a file. */
+static void
+mm_print_maps (struct mm_desc *mm, const char *path)
+{
+  for (struct vm_area *v = mm->vma_head; v; v = v->next)
+    {
+      char perms[5] = "---p";
+      if (v->flags & VMA_READ)
+        perms[0] = 'r';
+      if (v->flags & VMA_WRITE)
+        perms[1] = 'w';
+      if (v->flags & VMA_EXEC)
+        perms[2] = 'x';
+
+      const char *backing = "[anon]";
+      if (v->flags & VMA_STACK)
+        backing = "[stack]";
+      else if (v->flags & VMA_FILEBACKED)
+        backing = path;
+
+      kprintfdbg ("%016lx-%016lx %s %s\n",
+                  (unsigned long)v->start, (unsigned long)v->end,
+                  perms, backing);
+    }
+}
+
 void
 sys_execve (struct intr_trap_frame *tf)
 {
   ssize_t ret;                                      // return code
-  vaddr_t uvm = 0;                                  // new page table
+  struct mm_desc *mm = NULL;                        // new address space
   struct process *curr = arch_cpu_get()->proc;      // process that called execve()
   struct elf64_hdr *elf;                            // ELF header
   char path[PATH_MAX];                              // kernel copy of ARG0
 
-  // pathname is a userspace pointer: copy it into kernel memory first
-  ret = arch_strncpy_from_user (path, (const char*)ARG0 (tf), sizeof (path));
+  ret = arch_strncpy_from_user(path, (const char*)ARG0(tf), sizeof(path));
   if (ret < 0)
     goto bad;   // this returns -EFAULT
 
-  // get the ELF file
-  struct limine_file *f = limine_module_get (path);
+  // TODO: this will need to pass from an inode, instead of limine module
+  struct limine_file *f = limine_module_get(path);
   if (!f) {
     ret = -1;
     goto bad;
@@ -31,23 +57,23 @@ sys_execve (struct intr_trap_frame *tf)
   elf = (struct elf64_hdr*)f->address;
 
   // validate the ELF program
-  ret = elf_validate (elf);
+  ret = elf_validate(elf);
   if (ret < 0)
     goto bad;
 
-  // allocate a new page table with kernel mappings
-  uvm = uvm_alloc ();
+  // allocate a new address space (page table + empty VMA list)
+  mm = mm_alloc();
 
-  // try to load the ELF image into uvm
-  ret = elf_load(elf, uvm);
+  // try to load the ELF image into the new address space
+  ret = elf_load(elf, mm);
   if (ret < 0)
     goto bad;
 
-  // destroy the old uvm (TODO: make this deferred when kernel_idle runs)
-  uvm_destroy(curr->pgtable);
+  // destroy the old address space (TODO: make this deferred when kernel_idle runs)
+  mm_free (curr->mm);
 
-  // swap curr's page table
-  curr->pgtable = uvm;
+  // swap curr's address space
+  curr->mm = mm;
 
   /* this function modifies curr->tf in place, when sys_dispatcher
    * returns and eventually calls kernel_exit it will land on this
@@ -56,13 +82,14 @@ sys_execve (struct intr_trap_frame *tf)
   arch_proc_exec(curr, elf->e_entry, (vaddr_t)USR_STACK + PGSIZE);
 
   // unwind the syscall stack frame
-  kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
+  //kprintfdbg("[sys_execve] PID %d\n", (int)curr->pid);
+  mm_print_maps (curr->mm, path);
   return;
 
   /* if the requested ELF file was bad we destroy the
-   * new page table and return an error to the caller. */
+   * new address space and return an error to the caller. */
 bad:
-  if (uvm)
-    uvm_destroy(uvm);
+  if (mm)
+    mm_free (mm);
   RET (tf) = ret;
 }

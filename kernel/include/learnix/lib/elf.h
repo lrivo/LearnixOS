@@ -1,5 +1,6 @@
 #pragma once
 #include <learnix/types.h>
+#include <learnix/mm/mm_types.h>
 
 /* ELF64 types. */
 typedef uint16_t elf64_half;
@@ -117,5 +118,5 @@ struct elf64_phdr
 /* Checks if the given ELF file is a valid one. */
 int elf_validate(struct elf64_hdr *hdr); 
 
-/* Tries to load an ELF image into the given page table root. */
-int elf_load(struct elf64_hdr *hdr, vaddr_t pgdir);
+/* Tries to load an ELF image into the given memory descriptor. */
+int elf_load(struct elf64_hdr *hdr, struct mm_desc *mm);

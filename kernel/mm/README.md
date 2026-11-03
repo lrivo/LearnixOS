@@ -28,6 +28,18 @@ This component manages **page table**, the most important memory abstraction of 
 
 It is implemented as **architecture agnostic**, you will see it relies on `arch_map_pg` and `arch_unmap_pg()`, that each HW architecture must define to map/unmap a single virtual address.
 
+## The Memory Descriptor
+While the VMM maps single pages, a *process* needs a higher-level object that owns its whole address space: [`struct mm_desc`](../include/learnix/mm/mm_types.h), Learnix's version of Linux's `mm_struct`. It groups:
+- `pgtable` - the root of the page table implementing this address space.
+- `vma_head` - a sorted linked list of **VMAs** ([`vma.c`](vma.c)), each describing a region (`start`..`end`, permissions, file-backed or not) that makes demand paging and CoW possible.
+- the layout of the loaded image (`.text`/`.data`/`.bss` bounds) plus `brk_start`/`brk_curr` for the heap.
+
+The ownership chain is: `struct process` → `struct mm_desc` → `{pgtable, VMAs}`. The kernel stack is deliberately **not** part of the descriptor: it is a per-process resource (see [`proc/`](../proc/README.md)), while an `mm_desc` describes a shareable address space. The lifecycle lives in [`mm_desc.c`](mm_desc.c): `mm_alloc()` builds a fresh address space and `mm_free()` releases every VMA, the page table, then the descriptor itself — which also means VMAs can never leak on process exit anymore.
+
+The VMA types and flags live in `mm_types.h` (types only), while the function prototypes are split between `vma.h` (VMA list operations) and `mm.h` (descriptor lifecycle), mirroring Linux's `<linux/mm_types.h>` / `<linux/mm.h>` split.
+
+> NOTE: for now `mm_alloc()`/`mm_free()` still wrap the older `uvm_alloc()`/`uvm_destroy()` ([`uvm.c`](uvm.c)); the plan is to absorb the uvm code into the descriptor as the fork/exec rewrites land.
+
 ## Kmalloc()
 This is the **kernel heap**, used for dynamicly allocated structures like processes's PCBs.
 
