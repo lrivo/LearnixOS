@@ -4,6 +4,8 @@ project('learnixos', 'c', 'nasm')
 cc_runtime_dep = files('deps/cc-runtime/src/cc-runtime.c')
 freestnd_hdrs_dep  = include_directories('deps/freestnd-c-hdrs/include/', is_system:true)
 limine_hdrs_dep = include_directories('deps/limine-protocol/include/')
+uapi_hdrs_dep = include_directories('include')
+uapi_user_hdrs_dep = include_directories('include/uapi')
 
 # 1. read user selected componets
 kmalloc = get_option('kmalloc')

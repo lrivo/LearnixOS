@@ -27,12 +27,12 @@ liblearnix_ar = static_library(
   liblearnix_src,
   c_args: liblearnix_c_args,
   nasm_args: liblearnix_nasm_args,
-  include_directories: [include_directories('include'), freestnd_hdrs_dep]
+  include_directories: [include_directories('include'), uapi_user_hdrs_dep, freestnd_hdrs_dep]
 )
 
 # this is the dependency included by userspace programs
 # they automatically inherit cc-runtime and freestnd-c-hdrs
 liblearnix_dep = declare_dependency(
   link_with: liblearnix_ar,
-  include_directories: [include_directories('include'), freestnd_hdrs_dep]
+  include_directories: [include_directories('include'), uapi_user_hdrs_dep, freestnd_hdrs_dep]
 )

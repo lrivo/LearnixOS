@@ -12,6 +12,7 @@ off_t lseek(int fd, off_t offset, int whence);
 
 pid_t getpid(void);
 pid_t getppid(void);
+int set_fg_proc(pid_t pid);
 
 int pipe(int pipefd[2]);
 int yield(void);

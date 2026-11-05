@@ -76,6 +76,7 @@ kernel_src += cc_runtime_dep
 
 kernel_include_dirs = [
   include_directories('include'),
+  uapi_hdrs_dep,
   freestnd_hdrs_dep,
   limine_hdrs_dep,
 ]

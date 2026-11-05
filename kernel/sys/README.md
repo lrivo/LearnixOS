@@ -72,8 +72,10 @@ void sys_write(struct intr_trap_frame *tf) {
 ## Error handling & errno
 
 A handler signals failure by returning a **negative errno**, e.g.
-`RET(tf) = -EBADF`. POSIX errno constants (`EBADF`, `EINVAL`, ...) are reused
-from the userspace headers.
+`RET(tf) = -EBADF`. POSIX errno constants (`EBADF`, `EINVAL`, ...) are defined
+in the shared kernel–userspace ABI header
+[`include/uapi/learnix/errno.h`](../../include/uapi/learnix/errno.h), consumed
+by both the kernel and liblearnix.
 
 > 🐞 **Known bugs being tracked here:**
 > - `sys_read` / `sys_write` dereference the userspace `buf` pointer without

@@ -59,6 +59,19 @@ int test_vma_mmap() {
     return 0;
 }
 
+int test_getppid() {
+    pid_t parent_pid = getpid();
+    pid_t child = fork();
+    if (child == 0) {
+        printf("getppid: %s\n", getppid() == parent_pid ? "OK" : "FAIL");
+        exit(0);
+    }
+    int st;
+    wait(&st);
+    return 0;
+}
+
 int main(void) {
+    test_getppid();
     return test_vma_mmap();
 }

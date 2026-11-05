@@ -26,6 +26,7 @@ static void (*sys_table[128])(struct intr_trap_frame *tf) = {
   [SYS_DUP] = sys_dup,
   [SYS_DUP2] = sys_dup2,
   [SYS_GETPID] = sys_getpid,
+  [SYS_GETPPID] = sys_getppid,
   [SYS_FORK] = sys_fork,
   [SYS_EXECVE] = sys_execve,
   [SYS_EXIT] = sys_exit,
